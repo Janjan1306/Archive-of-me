@@ -1,3 +1,8 @@
+# Archive-of-me
+A customizable digital library and EPUB reader with visual story mapping, annotations, and personalized reading spaces.
+
+---
+
 # Personal Reading Workspace
 
 Phase 1 of DMS4 A1: a desktop-first, flat typographic digital library. This is a static application, with no account, server, paid API, or sync. The reference images guide the saturated spine design; no 3D effects are used.
