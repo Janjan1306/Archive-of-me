@@ -132,3 +132,29 @@ These are isolated browser fixtures on port 8001, distinct from the personal arc
 The full Round 03 workspace browser regression also completed DONE after these width changes. It exposed cumulative passage drift through repeated Reader/Split/Board reflows: sampling the newly wrapped first visible line each time moved the anchor slightly. Layout transitions, divider changes and font styling now reuse the retained source anchor, while user scrolling still records a fresh location. The rerun passed annotation sequences, source flashes, per-chapter refresh/Start Over, Finished rules, separate cameras, ratio persistence and ZIP preservation.
 
 Direct visual inspection used an isolated saved five-member stack with loaded artwork and a Full Board filling 1248px of a 1280px viewport (16px gutters), compared with the previous 1152px surface. A physical Split divider drag changed its ratio to 58% successfully. The direct browser error/warning log was empty. Evidence screenshots in the parent workspace: `round-04-spines.png`, `round-04-board.png`, `round-04-split.png`. Additional cross-browser and extended gesture testing remain manual.
+
+
+## Round 04 critical correction: actual physical Spines rendering
+
+Root cause of the previous failed fix: the active A1 controller routed both modes through `shelfMarkup(row)`. Its intrinsic-sizing additions prevented stretching in the measured fixture but did not create the requested all-horizontal presentation. The base renderer also retained an old alternative list-row branch. Prior checks inspected a fixture already made of horizontal books and did not require upright/tilted books to lie horizontally. This was a rendering/acceptance mismatch, not an outdated Git checkout.
+
+The active renderer now branches to `spinesMarkup(row)` with presentation-only groups. Each saved Shelf unit remains intact and ordered inside compact groups of up to five. The natural spine renderer accepts a presentation parameter: standing/tilted spines rotate as complete designs inside horizontal slots, preserving their saved dimensions and all design coordinates. Existing horizontal designs are unchanged. The old `.list` markup hooks, row branch and selectors are removed. Zero gap applies only to physical Spines groups. One composition-scale transform applies uniformly, with centering when space permits.
+
+The isolated `tests/spines-physical.html` browser suite reached DONE. At 1280 and 1440px it measured the actual shelf, composition, stacks, slots and books, including computed width/height, flex, alignment, gap and transform. The five-book fixture has loaded PNG artwork and custom Georgia typography. Both viewport widths used composition scale 1.8:
+
+| Book | Natural size | Rendered rectangle |
+| --- | --- | --- |
+| Field Notes | 280 × 42 | 504 × 75.6 |
+| The Long Journey | 330 × 55 | 594 × 99 |
+| Small Worlds | 245 × 38 | 441 × 68.4 |
+| Ways of Seeing | 310 × 68 | 558 × 122.4 |
+| Collected Things | 270 × 46 | 486 × 82.8 |
+
+Computed group gap is 0px; adjacent slot edges match within 0.1px. No book width equals the shelf width. At 1440px the centered composition rectangle is 594 × 448.2px. Shelf restores small gaps. A separate 16-book fixture includes upright, left-tilted and right-tilted records: every rendered book has width = saved length × composition scale and height = saved thickness × the same scale at 1024/1280/1440/1920px. All groups fit within the shelf. Complete fixture snapshots confirm unchanged orientations, dimensions, custom designs, stack IDs and ordering after view changes and refresh. Keyboard cover preview and saved Shelf manual grouping also pass.
+
+Screenshots of the same five-book Library were captured and visually compared for both modes at both required widths. Evidence in the parent workspace: `physical-shelf-1280.png`, `physical-spines-1280.png`, `physical-shelf-1440.png`, `physical-spines-1440.png`. `physical-stack-measurements.json` contains all recorded rectangles and computed properties. The Spines images show a compact centered stack with different lengths/thicknesses and touching edges, rather than viewport-width rows.
+
+No personal archive reset or orientation/data migration is used. Broader publisher design and cross-browser optical review remain manual; source-anchor and existing A1 limitations are unchanged.
+
+
+Final regressions: all four Node suites passed; JavaScript syntax and diff checks passed. The full Round 03 workspace suite reached DONE for Reader layout, annotation persistence, chapter positions, Split ratio/cameras, Board coordinates and ZIP fields. The Round 02 studio suite reached DONE for artwork settings, custom covers, Save/Cancel, EPUB replacement and image ZIP restore. Direct inspection of the actual port-8000 personal Library showed all 16 existing books in four horizontal presentation groups, with `class="books"` and `data-view="spines"`; its error/warning log was empty. `physical-live-library.png` records that real Library rendering. Saved personal designs and arrangements were not edited to obtain that result.

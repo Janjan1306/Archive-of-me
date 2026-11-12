@@ -184,3 +184,14 @@ Book and rotated-slot dimensions are now explicit renderer-owned styles derived 
 Split and Full Story Board panels break out of the centered 1600px page grid to viewport width minus 16–24px gutters. Global header, book headings and workspace navigation keep their established grid. Standalone Reader keeps its existing layout and centered chapter column. The actual client viewport width is refreshed through the existing workspace sizing function; resizing changes presentation only, retaining card coordinates, separate cameras and saved divider ratios. Layout-only transitions and font changes reuse the retained text anchor to avoid passage drift from repeated viewport resampling.
 
 Run `/tests/layout04.html` on the isolated port-8001 server for five-book geometry/artwork/persistence and 16-book fitting at 1024/1280/1440/1920px, plus wide Board/Split and Reader regression checks. No schema migration or personal archive reset is used.
+
+
+## Round 04 critical correction — Spines is a physical presentation
+
+The earlier implementation reused `shelfMarkup()` for both views and only removed gaps from saved horizontal stacks. That preserved the Shelf arrangement, including standing books, instead of implementing an all-horizontal Spines visualization. Its tests checked dimensions of books that were already horizontal, missing the incorrect treatment of upright/tilted books.
+
+Spines now has a dedicated `spinesMarkup()` path. It visually packs Shelf units into groups of up to five without splitting saved manual groups or changing their order. Already-horizontal books keep their design; upright/tilted books are laid flat by rotating the entire spine 90° inside a length-by-thickness slot. Fonts, artwork and coordinates rotate with the book. No saved orientation, length, thickness, membership or order is rewritten. Shelf retains its original layout and small stack gaps.
+
+The obsolete `.list` class/styles and fallback full-width row rendering branch are removed. `#books[data-view=spines]` selects zero stack gap. Natural slots define composition bounds; one shared transform fits and centers the complete Spines arrangement. No individual book is expanded to container width.
+
+Run `/tests/spines-physical.html` on isolated port 8001 for real rendered rectangles/computed styles of the shelf, composition, stack, slots and books; a five-book artwork/typography fixture at 1280/1440px; and mixed 16-book Libraries at 1024/1280/1440/1920px. These tests explicitly require every upright/tilted book to become visually horizontal without saved-data changes.
