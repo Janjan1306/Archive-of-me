@@ -1,36 +1,43 @@
-# Validation performed
-
-- JavaScript parsed successfully with Node vm.Script.
-- Static preview served and rendered in the in-app browser.
-- First-visit demo library and placeholders visible.
-- Sample detail dialog displayed its readable excerpt and editable metadata.
-- Vietnamese title edit survived page reload; library count remained 3.
-- At narrow width, multiple shelves were generated and next-shelf control was enabled. At wider width, all three sample books fit together.
-- Real EPUB fixture and invalid file are provided in tests/ for repeatable manual import checks.
-
-## Verification limits
-
-The browser automation's file-chooser event timed out, so real-file import and backup download have not been end-to-end verified in this session. The application contains real ZIP/XML import logic and transaction-backed storage; these are not mocked. Cover extraction, DRM rejection, storage quota errors, delete confirmation, trackpad input, and exhaustive narrow-width cases still need the manual checks in README.md. Reader/annotation/board scenarios are deferred by design to the later phases.
-
-
-# Main Library redesign validation
+# Current validation: book creation and workspace navigation
 
 ## Passed automated checks
 
-`node --check dist/app.js` and `node tests/library.test.cjs` pass. Tests cover empty/3/16/17/32/33-book collections, the 17th book on Shelf 02, legacy fallbacks without mutation, invalid appearance fallbacks, horizontal dimensions, rotated bounding-box space, intentional stacks, escaped labels, and hero removal.
+Run `node --check dist/app.js` and `node tests/library.test.cjs`.
 
-## Browser checks performed
+- Fixed shelf boundaries for 0, 3, 16, 17, 32 and 33 books; 17th book belongs to Shelf 02.
+- Legacy appearance fallback without mutating records; landscape proportions, tilted bounding boxes, stacks and escaped text.
+- Empty book creation without a file, unique stable IDs and initialized isolated workspace notes.
+- Note create/edit/delete preserves IDs, unrelated fields and prior record state.
+- Attachment/replacement keeps the original book ID, chosen title/author, appearance, notes, reading progress and unknown workspace fields; stores EPUB metadata separately.
+- The actual existing backup handler runs with real JSZip. Its ZIP contains notes, appearance and the same book ID in library.json, and the EPUB bytes as a separate file.
+- `git diff --check` passes.
 
-- Existing local IndexedDB still contained the same three demos, including a previously edited Vietnamese title. No database migration or reset occurred.
-- Hero absent; library is immediately beneath the header. The shelf scroll container remains within the narrow preview window.
-- Opened existing demo details and the new appearance editor.
-- Set horizontal orientation, saved, refreshed, reopened and confirmed Horizontal remained selected.
-- Previewed a tilted orientation, canceled, reopened and confirmed the saved Horizontal remained selected.
-- Imported tests/sample.epub through the real file chooser; extracted Vietnamese title and author, and opened its detail dialog with new appearance controls.
-- Edited that imported title, saved, reloaded and confirmed the imported book and edited title remained.
+## Passed browser checks in the local preview
 
-## Remaining manual verification / limitations
+- Existing three demo records remained present at 127.0.0.1:8000; no IndexedDB version/store changes or reseeding.
+- Separate Create New Book and Import EPUB actions are visible.
+- Created “Workspace test — Sổ tay” without EPUB. Count increased from 3 to 4 and the new spine appeared immediately.
+- Selected the spine and entered its workspace directly. Reader showed the honest no-EPUB state.
+- Saved a Vietnamese text note, refreshed and confirmed the same workspace/tab and note returned.
+- Customize Book opened the existing live appearance editor from the workspace.
+- Attached the real tests/sample.epub using the file chooser. Workspace URL retained the same book ID and chosen title; action changed to Replace EPUB. Library count stayed 4, and the existing note remained present afterward.
+- Alice’s workspace had 0 notes, confirming isolation from the newly created book.
+- All three existing demo books opened their individual workspaces with clearly labeled sample excerpts.
+- Direct Import EPUB created a separate “Thành phố trong sách” workspace with an attached file and honest deferred-reader state.
+- Back to Library navigation worked between these flows.
 
-Repeated file-chooser automation was unreliable, so a full 17-import browser run was not completed. Shelf membership at that boundary is verified by the regression test, not an end-to-end run of 17 uploads. Exhaustive drag/trackpad gestures, all appearance sliders, reset/save combinations, Spines view round trips, backup download contents and quota-failure paths should still be checked manually. The EPUB parser, DRM checks, backup handler and database version/store were kept unchanged; metadata export includes the added appearance object through its existing object-rest serialization. This is code-level preservation, not a claim of new end-to-end testing for those paths.
+## Remaining manual checks / limits
 
-For a manual full regression: import until 17 books exist; ensure 16 stay on Shelf 01, the 17th is on Shelf 02; resize the window and switch views; edit a tilted/horizontal book, cancel once and save once; reload; export ZIP and inspect library.json for appearance and original EPUBs. Check labels/tooltips and keyboard focus for every book, and verify scrolling within a shelf never changes its membership. Stacks retain individual click targets. Large mixed-size collections deliberately scroll rather than fit 16 books into unreadably narrow spines.
+Appearance preservation and replacement data merges are covered by model tests; a complete confirmed-replacement browser cycle and every editor control have not been re-tested end to end in this iteration. Note edit/delete are model-tested; browser creation/persistence were exercised. The file chooser automation sometimes needed an explicit Escape to leave the editor before proceeding. Invalid-file/quota failures and browser backup downloads should still be rechecked manually. The real ZIP backup serialization is covered by the Node regression test.
+
+The 17-book boundary is tested at the model level, not by creating 17 books through browser automation. No full EPUB reader or visual board canvas is claimed. Original EPUB parsing, DRM checks, database version and store remain unchanged. Test books/notes created during browser validation are local fixtures, not seeded application content and not committed to GitHub.
+
+## Suggested manual acceptance flow
+
+1. Create a book with a chosen title/author and no file. Open its spine and verify the empty Reader state.
+2. Customize its appearance and save. Add a note in Story Board, edit it, reload, and confirm its content.
+3. Attach sample.epub. Check ID, title, author, appearance, count and notes. Export backup and inspect those fields and the original file.
+4. Cancel Replace EPUB; confirm no change. Replace with a valid file; verify data preservation. Try invalid.epub and verify no file replacement or duplicate record.
+5. Open each demo’s excerpt and notes. Confirm no cross-book note leakage. Delete a test note only after its confirmation.
+6. Return to the library, switch views, test keyboard tab navigation and narrow-screen scrolling. Create enough books for Shelf 02 and verify membership stays fixed across resizing.
+7. Test denied storage/quota failures in a separate browser profile; no successful-save message or phantom record should appear.
