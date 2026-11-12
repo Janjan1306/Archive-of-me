@@ -26,7 +26,7 @@ Run on port 8001 as documented in README. The production/local user archive on p
 | K — Migration | Passed | Actual v1 fixture with 17 books upgraded to 2 Libraries; EPUB bytes retained; note converted once; repeated open did not duplicate; corrupt notes aborted upgrade and kept v1. |
 | L — Responsive | Partial | At 390px iframe width, canvas authoring disabled and Split View hidden. Full mobile reading, touch pan/zoom and desktop divider gestures need manual review. |
 
-The latest full browser harness run reached DONE with all of its assertions passing. Initial defects found and fixed during validation included cover-page readiness in the test, a queued dialog-close race affecting rapid Design First submissions, correct XHTML parsing for self-closing anchors, and explicit abort on synchronous cloning failures. No acceptance item is labeled fully passed beyond its stated scope.
+The latest full browser harness run reached DONE with all of its assertions passing. Initial defects found and fixed during validation included cover-page readiness in the test, a queued dialog-close race affecting rapid Design First submissions, correct XHTML parsing for self-closing anchors, explicit abort on synchronous cloning failures, and preventing native focus scrolling inside the transform-driven canvas. No acceptance item is labeled fully passed beyond its stated scope.
 
 ## Static and console checks
 
