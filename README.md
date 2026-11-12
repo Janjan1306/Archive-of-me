@@ -175,3 +175,12 @@ Split width defaults to 55% Reader and saves as `splitRatio` on each book, with 
 The Library's first tab text now starts at the shared header/shelf gutter. Obsolete list-item styles have been removed: Shelf and Spines use the same natural book dimensions, artwork, typography and uniform whole-composition scale. Only horizontal stack gaps change, from 4px in Shelf to zero in Spines. This does not rewrite book dimensions or stack relationships.
 
 No IndexedDB version change or data rewrite is necessary: absent fields use safe defaults, and updates spread existing book/board fields. ZIP export already includes these additive fields. Run `/tests/workspace03.html` on the isolated port-8001 server for end-to-end coverage, including 16 books and three differently sized horizontal books at 1024/1280/1440px. Desktop/laptop interactions are this round's target; touch behavior is outside its scope.
+
+
+## Feedback Round 04 — intrinsic spines and wider working surfaces
+
+Book and rotated-slot dimensions are now explicit renderer-owned styles derived from the existing appearance values, independent of list/container widths and flex growth. Shelf and Spines still share markup, artwork and typography; only stack gaps differ. Manual stacks accept up to five books for a physical stack with different lengths/thicknesses. Automatic groups remain two or three and existing stacks are not regrouped. The Library capacity remains 16.
+
+Split and Full Story Board panels break out of the centered 1600px page grid to viewport width minus 16–24px gutters. Global header, book headings and workspace navigation keep their established grid. Standalone Reader keeps its existing layout and centered chapter column. The actual client viewport width is refreshed through the existing workspace sizing function; resizing changes presentation only, retaining card coordinates, separate cameras and saved divider ratios. Layout-only transitions and font changes reuse the retained text anchor to avoid passage drift from repeated viewport resampling.
+
+Run `/tests/layout04.html` on the isolated port-8001 server for five-book geometry/artwork/persistence and 16-book fitting at 1024/1280/1440/1920px, plus wide Board/Split and Reader regression checks. No schema migration or personal archive reset is used.

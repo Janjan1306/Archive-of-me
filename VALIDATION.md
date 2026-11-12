@@ -114,3 +114,21 @@ Used actual browser controls to open Contents and navigate to Chapter I. Physica
 ### Scope and remaining verification
 
 Location persistence uses validated chapter/text-offset anchors rather than EPUB CFIs; replacing a chapter's text may require source relinking, as before. Existing incomplete A1 features listed above remain outside this round. This round does not validate tablet/mobile touch interactions, every publisher EPUB layout, every font/image timing combination, or prolonged cross-browser gesture sessions. Actual divider dragging and annotation selection were directly tested; additional cross-browser optical and interaction review remains useful. Storage schema stays version 3; additive fields default safely for old books. No personal database reset, sample recreation, force push or main merge was performed.
+
+
+## Feedback Round 04 acceptance
+
+The initial live port-8000 inspection reported intrinsic sizes (for example 330×100, 330×38 and 280×38 before composition scaling), rather than full-width rows. The equal lengths among some existing books came from their saved 330px dimensions. Round 04 does not change those user values; it makes intrinsic spine/slot sizing explicit in the renderer and versions the updated assets so older list styles cannot supply row dimensions. The previous workspace width restriction was reproduced: the shared 1600px cap and 5vw/72px gutters limited the working surface.
+
+All four Node suites passed, with stacking coverage extended to five-member manual groups, preserved appearance references, idempotent automatic normalization, and rejection of a sixth member. Existing automatic two/three grouping, legacy migration, separation and manual restacking remain covered. Syntax and diff checks passed.
+
+`tests/layout04.html` completed DONE in the browser. It uses real IndexedDB and production rendering with a saved manual stack of five books: lengths 340/200/290/240/315 and thicknesses 32/46/65/80/105. At 1024, 1280, 1440 and 1920px it verifies five distinct widths/heights, unchanged aspect ratios, artwork transforms and typography, zero Spines gaps, restored Shelf gaps and a uniformly fitting 16-book composition. Saved dimensions, artwork asset sizes, order and membership remain identical after view switches and refresh.
+
+At all four widths, Full Board and Split use the client viewport minus 16–24px gutters, with the canvas filling the panel width. Compared with the former grid, the usable width increases by approximately 70–416px depending on viewport size. Header/navigation alignment remains intact. Reader retains its 850px maximum chapter column, complete measured chapter height and outer scrolling. Divider changes persist without moving the Split camera; returning Full Board restores its camera. No horizontal overflow, card-coordinate changes, connection changes or bookshelf-data changes were detected. Minimap, Fit and Reset controls remain present.
+
+These are isolated browser fixtures on port 8001, distinct from the personal archive on port 8000. No personal books, designs or database stores were reset. Additional optical/cross-browser review remains manual; desktop/laptop is the focus, as in Round 03. Existing EPUB text-anchor and other A1 limitations remain unchanged.
+
+
+The full Round 03 workspace browser regression also completed DONE after these width changes. It exposed cumulative passage drift through repeated Reader/Split/Board reflows: sampling the newly wrapped first visible line each time moved the anchor slightly. Layout transitions, divider changes and font styling now reuse the retained source anchor, while user scrolling still records a fresh location. The rerun passed annotation sequences, source flashes, per-chapter refresh/Start Over, Finished rules, separate cameras, ratio persistence and ZIP preservation.
+
+Direct visual inspection used an isolated saved five-member stack with loaded artwork and a Full Board filling 1248px of a 1280px viewport (16px gutters), compared with the previous 1152px surface. A physical Split divider drag changed its ratio to 58% successfully. The direct browser error/warning log was empty. Evidence screenshots in the parent workspace: `round-04-spines.png`, `round-04-board.png`, `round-04-split.png`. Additional cross-browser and extended gesture testing remain manual.

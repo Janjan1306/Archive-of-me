@@ -26,7 +26,7 @@ const Model={
     const source=records.find(b=>b.id===sourceId),target=records.find(b=>b.id===targetId);
     if(!source||!target||source===target||source.deletedAt||target.deletedAt||source.libraryId!==target.libraryId||!Model.horizontal(source)||!Model.horizontal(target))throw new Error('Stacking requires horizontal books in the same Library.');
     const members=(target.stackId?Model.stackMembers(records,target):[target]).filter(b=>b.id!==sourceId);
-    if(members.length>=3)throw new Error('Stacks hold at most three books.');
+    if(members.length>=5)throw new Error('Stacks hold at most five books.');
     members.splice(members.findIndex(b=>b.id===targetId)+(above?1:0),0,source);
     const id=target.stackId||crypto.randomUUID();
     return records.map(b=>{const index=members.findIndex(x=>x.id===b.id);return index>=0?{...b,stackId:id,stackOrder:index,stackSchemaVersion:1,stackMode:'manual'}:b});

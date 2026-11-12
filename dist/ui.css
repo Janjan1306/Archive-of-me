@@ -15,3 +15,14 @@ body.workspace-open>footer{display:none}#workspace{padding-top:8px;padding-botto
 
 /* The inspector overlays the canvas only when a card/connection is selected. */
 .board-layout{grid-template-columns:minmax(0,1fr)}#cardInspector{position:absolute;right:0;top:0;width:240px;z-index:4}#cardInspector:not(:has(input)){display:none}
+
+/* Round 04: wide working surfaces, independent of the Reader and global chrome. */
+#workspacePanels[data-mode=split],#workspacePanels[data-mode=board]{
+  --workspace-gutter:clamp(16px,1.25vw,24px);
+  width:calc(var(--workspace-width,100vw) - 2 * var(--workspace-gutter));
+  margin-inline-start:calc((100% - var(--workspace-width,100vw)) / 2 + var(--workspace-gutter));
+  max-width:none;
+}
+/* Slots reserve the rotated silhouette; spines keep their own intrinsic dimensions. */
+#shelfComposition .book-stack{flex:0 0 auto;width:max-content;align-items:flex-start}
+#shelfComposition .book-slot{flex-grow:0;flex-shrink:0;align-self:auto}
