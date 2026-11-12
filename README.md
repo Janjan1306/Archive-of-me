@@ -125,3 +125,9 @@ Version 3 preserves explicit stacks and converts older implicit runs of horizont
 Drop onto the center of a horizontal spine to stack; drop near its left/right edges to reorder beside it and remove it from its previous stack. The upper/lower half of a center drop chooses above/below the target. Shift remains a stacking shortcut. Pink dashed feedback means stack, yellow means reorder; the shelf caption labels the action. Separate stacks reserve their own full width before the uniform shelf transform.
 
 Run `node tests/stacking.test.cjs`, or serve the repository on port 8001 and open `/tests/stacking.html` for real IndexedDB migration/reopen and production CSS/drop-handler checks in uniquely named fixture databases.
+
+## Automatic horizontal stacks (current product behavior)
+
+Adjacent horizontal books now automatically form groups of two or three, including existing records with null stack membership. Membership and bottom-to-top order are reconciled into IndexedDB on load and after layout changes; no schema reset or sample recreation is used. Existing explicit manual groups remain intact. New books default to automatic mode.
+
+Center-drop to restack. Edge-drop separates a single book and saves `stackMode: separate`, so it stays separate after refresh. Alt-drag on an edge moves an entire stack as a unit. Center-drop turns a group into a saved manual stack. Whole-shelf Scale to Fit still transforms the complete stack artwork uniformly. Earlier instructions saying stacks are never automatic are superseded by this product direction.

@@ -1,6 +1,14 @@
 /* Pure archive invariants, also loaded by the Node regression suite. */
 (function(root){
 const Model={
+  autoStack(records){
+    const changes=new Map(),mode=b=>b.stackMode||(b.stackId&&Model.stackMembers(records,b).length>1&&!b.stackId.startsWith('legacy-stack-')&&!b.stackId.startsWith('auto-stack-')?'manual':'auto');
+    for(const library of new Set(records.map(b=>b.libraryId))){let run=[];
+      const flush=()=>{for(let i=0;i<run.length;i+=3){const group=run.slice(i,i+3);group.forEach((b,index)=>changes.set(b.id,{stackId:group.length>1?'auto-stack-'+group[0].id:null,stackOrder:group.length>1?index:null,stackMode:'auto'}))}run=[]};
+      for(const b of records.filter(b=>b.libraryId===library&&!b.deletedAt).sort((a,b)=>(a.order??a.createdAt??0)-(b.order??b.createdAt??0))){if(Model.horizontal(b)&&mode(b)==='auto')run.push(b);else{flush();if(!b.stackMode)changes.set(b.id,{stackMode:mode(b)})}}flush();
+    }
+    return records.map(b=>{const change=changes.get(b.id);return change&&Object.entries(change).some(([key,value])=>b[key]!==value)?{...b,...change}:b});
+  },
   horizontal(book){return (book.appearance?.orientation||({'demo-sherlock':'horizontal'})[book.id]||'upright')==='horizontal'},
   stackMembers(books,book){return books.filter(b=>!b.deletedAt&&b.libraryId===book.libraryId&&b.stackId===book.stackId&&Model.horizontal(b)).sort((a,b)=>(a.stackOrder??a.order??0)-(b.stackOrder??b.order??0))},
   // Legacy implicit stacks used consecutive shelf order, with the first book at the bottom.
@@ -21,9 +29,9 @@ const Model={
     if(members.length>=3)throw new Error('Stacks hold at most three books.');
     members.splice(members.findIndex(b=>b.id===targetId)+(above?1:0),0,source);
     const id=target.stackId||crypto.randomUUID();
-    return records.map(b=>{const index=members.findIndex(x=>x.id===b.id);return index>=0?{...b,stackId:id,stackOrder:index,stackSchemaVersion:1}:b});
+    return records.map(b=>{const index=members.findIndex(x=>x.id===b.id);return index>=0?{...b,stackId:id,stackOrder:index,stackSchemaVersion:1,stackMode:'manual'}:b});
   },
-  unstackBook(records,id){return records.map(b=>b.id===id?{...b,stackId:null,stackOrder:null,stackSchemaVersion:1}:b)},
+  unstackBook(records,id){return records.map(b=>b.id===id?{...b,stackId:null,stackOrder:null,stackSchemaVersion:1,stackMode:'separate'}:b)},
   board(book){return book.board||{cards:[],connections:[],viewport:{x:40,y:40,zoom:1}}},
   migrate(old){
     const libraries=[],books=[...old].sort((a,b)=>(a.order??a.createdAt??0)-(b.order??b.createdAt??0)).map((record,i)=>{

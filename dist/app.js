@@ -13,7 +13,7 @@ async function updateBook(id,change){
   });books=books.map(b=>b.id===id?updated:b);return updated;
 }
 function newBookRecord(title,author,index=books.length){
-  const b={id:crypto.randomUUID(),title,author:author||'Unknown author',color:colors[index%colors.length],type:'sans',width:[38,55,75,100,135][index%5],height:[220,280,330][index%3],createdAt:Date.now(),demo:false,stackId:null,stackOrder:null,stackSchemaVersion:1,workspace:{schemaVersion:1,notes:[]}};
+  const b={id:crypto.randomUUID(),title,author:author||'Unknown author',color:colors[index%colors.length],type:'sans',width:[38,55,75,100,135][index%5],height:[220,280,330][index%3],createdAt:Date.now(),demo:false,stackId:null,stackOrder:null,stackSchemaVersion:1,stackMode:'auto',workspace:{schemaVersion:1,notes:[]}};
   b.appearance={...defaultAppearance(b),orientation:['upright','upright','left','right','horizontal','horizontal'][index%6]};b.appearanceDefaults={...b.appearance};return b;
 }
 function workspaceOf(book){return {...book.workspace,schemaVersion:book.workspace?.schemaVersion||1,notes:Array.isArray(book.workspace?.notes)?book.workspace.notes:[]};}

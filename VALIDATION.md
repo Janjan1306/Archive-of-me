@@ -53,3 +53,8 @@ Successful migration upgrades this origin to database version 3. Older main-bran
 ## Horizontal stacking regression
 
 Compared the pre-A1 renderer's consecutive-horizontal grouping with the A1 `stackId`-only renderer. Added atomic v3 stack metadata migration (without changing stores), persistent bottom-to-top `stackOrder`, center/edge drag intent and above/below insertion. Model tests pass for 2/3 members, order, unstack, capacity rejection, idempotence and unchanged appearance/File/Library. Isolated browser tests use real IndexedDB and production markup/CSS/Scale to Fit for 16 mixed books: migration/reopen ordering, vertical geometry, non-collision and uniform fitting pass. The browser fixture also exercises the actual production drop handler for edge unstack and center restack. Physical mouse/trackpad drag gestures have not been automated in this fix.
+
+
+## Automatic stacking direction change
+
+Model tests cover adjacent current null-membership books, groups of 2/3, idempotent saved automatic order, explicit separation, and manual restacking. The isolated browser fixture additionally persists automatic membership into actual IndexedDB, reopens it, renders the production shelf, verifies vertical ordering/collision-free Scale to Fit with 16 mixed books, and exercises production edge/center drop handlers. Actual port-8000 browser rendering was inspected: adjacent horizontal spines share a stack, with equal horizontal position and distinct vertical bounds. Cache-versioned model/controller scripts ensure refresh uses the new implementation. Existing designs are not reoriented or recolored to manufacture a sample result.
