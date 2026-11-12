@@ -1,6 +1,29 @@
 /* Pure archive invariants, also loaded by the Node regression suite. */
 (function(root){
 const Model={
+  horizontal(book){return (book.appearance?.orientation||({'demo-sherlock':'horizontal'})[book.id]||'upright')==='horizontal'},
+  stackMembers(books,book){return books.filter(b=>!b.deletedAt&&b.libraryId===book.libraryId&&b.stackId===book.stackId&&Model.horizontal(b)).sort((a,b)=>(a.stackOrder??a.order??0)-(b.stackOrder??b.order??0))},
+  // Legacy implicit stacks used consecutive shelf order, with the first book at the bottom.
+  migrateStacks(records){
+    const books=records.map(b=>({...b}));
+    const libraries=[...new Set(books.map(b=>b.libraryId))];
+    for(const library of libraries){const row=books.filter(b=>b.libraryId===library&&!b.deletedAt).sort((a,b)=>(a.order??a.createdAt??0)-(b.order??b.createdAt??0));let run=[];
+      const flush=()=>{for(let i=0;i<run.length;i+=3){const group=run.slice(i,i+3);if(group.length>1)group.forEach((b,index)=>{b.stackId='legacy-stack-'+group[0].id;b.stackOrder=index})}run=[]};
+      for(const b of row){if(!b.stackSchemaVersion&&b.stackId===undefined&&Model.horizontal(b))run.push(b);else flush()}flush();
+    }
+    const visited=new Set();for(const b of books){const key=JSON.stringify([b.libraryId,b.stackId]);if(b.stackId&&!visited.has(key)){visited.add(key);const members=Model.stackMembers(books,b);members.forEach((item,index)=>{if(item.stackOrder===undefined)item.stackOrder=index})}b.stackSchemaVersion=1}
+    return books;
+  },
+  stackBooks(records,sourceId,targetId,above=true){
+    const source=records.find(b=>b.id===sourceId),target=records.find(b=>b.id===targetId);
+    if(!source||!target||source===target||source.deletedAt||target.deletedAt||source.libraryId!==target.libraryId||!Model.horizontal(source)||!Model.horizontal(target))throw new Error('Stacking requires horizontal books in the same Library.');
+    const members=(target.stackId?Model.stackMembers(records,target):[target]).filter(b=>b.id!==sourceId);
+    if(members.length>=3)throw new Error('Stacks hold at most three books.');
+    members.splice(members.findIndex(b=>b.id===targetId)+(above?1:0),0,source);
+    const id=target.stackId||crypto.randomUUID();
+    return records.map(b=>{const index=members.findIndex(x=>x.id===b.id);return index>=0?{...b,stackId:id,stackOrder:index,stackSchemaVersion:1}:b});
+  },
+  unstackBook(records,id){return records.map(b=>b.id===id?{...b,stackId:null,stackOrder:null,stackSchemaVersion:1}:b)},
   board(book){return book.board||{cards:[],connections:[],viewport:{x:40,y:40,zoom:1}}},
   migrate(old){
     const libraries=[],books=[...old].sort((a,b)=>(a.order??a.createdAt??0)-(b.order??b.createdAt??0)).map((record,i)=>{

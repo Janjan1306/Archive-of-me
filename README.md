@@ -57,16 +57,16 @@ Reader / Board / Split View remain mounted when switching, preserving independen
 
 ## Persistence, migration and recovery
 
-Database: `personal-reading-workspace`, now version 2. Stores: `books`, `libraries`, `fonts`, `settings`. EPUB Files, covers, artwork, reader preferences/position, highlights, board/cards/connections, deleted flags and original legacy fields remain associated with their book records.
+Database: `personal-reading-workspace`, now version 3. Stores: `books`, `libraries`, `fonts`, `settings`. EPUB Files, covers, artwork, reader preferences/position, highlights, board/cards/connections, deleted flags and original legacy fields remain associated with their book records.
 
-Version 1 → 2 migration runs inside the IndexedDB version-change transaction:
+Version 1 → 3 migration runs inside the IndexedDB version-change transaction:
 
 1. Validate existing records and retain IDs, metadata, Files, appearance, notes and unknown fields.
 2. Distribute existing books into groups of at most 16 Libraries. This is a migration-only exception to manual Library creation.
 3. Convert old standalone notes to Free Note Cards with stable legacy-note IDs, exactly once. Original notes remain archived in the record for preservation; future edits happen in cards.
 4. Mark the existing archive initialized so no new samples are appended.
 
-If any migration step fails, the entire upgrade aborts; version 1 and its stores remain intact. Other open tabs must close or reload before a blocked upgrade can complete. Successful upgrades do not downgrade: the older main-branch application requests version 1 and cannot open version 2 at the same origin. Review older code using a separate origin/profile; export a backup before switching versions.
+If any migration step fails, the entire upgrade aborts; the original database version and its stores remain intact. Other open tabs must close or reload before a blocked upgrade can complete. Successful upgrades do not downgrade: the older main-branch application requests version 1 and cannot open version 3 at the same origin. Review older code using a separate origin/profile; export a backup before switching versions.
 
 Book deletion moves its entire record to Recently Deleted, excluded from Library capacity. Restore uses the original active Library when possible; archived/missing/full destinations require an explicit available destination. Deleted records remain indefinitely. Permanent deletion requires confirmation.
 
@@ -117,3 +117,11 @@ This is a working A1 concept slice, not a claim that every item in the full brie
 ## Static deployment
 
 Upload `dist/` unchanged to any static host. For GitHub Pages use `upload-pages-artifact` with `path: dist`, followed by `deploy-pages` with `pages: write` and `id-token: write`. Alternatively publish dist contents at a branch root. All scripts, styles and bundled sample paths are relative; the browser tests also exercise the app from `/dist/index.html`, verifying a non-root subpath. Source pushes do not automatically redeploy the separate Sites preview.
+
+## Horizontal stacking compatibility fix
+
+Version 3 preserves explicit stacks and converts older implicit runs of horizontal books to saved groups of two or three once. `stackId` stores membership; `stackOrder` stores bottom-to-top order. Explicit `stackId: null` means intentionally unstacked and is never inferred back into a stack. New books carry this marker from creation. No book ID, appearance, EPUB, notes or Library is changed by the version-2-to-3 stack upgrade.
+
+Drop onto the center of a horizontal spine to stack; drop near its left/right edges to reorder beside it and remove it from its previous stack. The upper/lower half of a center drop chooses above/below the target. Shift remains a stacking shortcut. Pink dashed feedback means stack, yellow means reorder; the shelf caption labels the action. Separate stacks reserve their own full width before the uniform shelf transform.
+
+Run `node tests/stacking.test.cjs`, or serve the repository on port 8001 and open `/tests/stacking.html` for real IndexedDB migration/reopen and production CSS/drop-handler checks in uniquely named fixture databases.

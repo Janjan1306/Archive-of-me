@@ -1,9 +1,10 @@
 /* Version upgrades and archive restores commit atomically. No destructive re-creation. */
 const ArchiveDB={
   stores:['books','libraries','fonts','settings'],
-  open(name='personal-reading-workspace'){return new Promise((resolve,reject)=>{let migrationError;const request=indexedDB.open(name,2);request.onblocked=()=>reject(new Error('Close other tabs of Archive of Me, then reload to finish the safe database upgrade.'));
+  open(name='personal-reading-workspace'){return new Promise((resolve,reject)=>{let migrationError;const request=indexedDB.open(name,3);request.onblocked=()=>reject(new Error('Close other tabs of Archive of Me, then reload to finish the safe database upgrade.'));
     request.onupgradeneeded=event=>{const db=request.result,tx=request.transaction;for(const name of this.stores)if(!db.objectStoreNames.contains(name))db.createObjectStore(name,{keyPath:'id'});
-      if(event.oldVersion===1){const store=tx.objectStore('books'),read=store.getAll();read.onsuccess=()=>{try{const migrated=ArchiveModel.migrate(read.result);ArchiveModel.validate({...migrated,fonts:[],settings:[]});for(const b of migrated.books)store.put(b);for(const l of migrated.libraries)tx.objectStore('libraries').put(l);tx.objectStore('settings').put({id:'initialized',value:true});}catch(e){migrationError=e;tx.abort()}};}
+      if(event.oldVersion===1){const store=tx.objectStore('books'),read=store.getAll();read.onsuccess=()=>{try{const migrated=ArchiveModel.migrate(read.result);ArchiveModel.validate({...migrated,fonts:[],settings:[]});for(const b of ArchiveModel.migrateStacks(migrated.books))store.put(b);for(const l of migrated.libraries)tx.objectStore('libraries').put(l);tx.objectStore('settings').put({id:'initialized',value:true});}catch(e){migrationError=e;tx.abort()}};}
+      if(event.oldVersion===2){const store=tx.objectStore('books'),read=store.getAll();read.onsuccess=()=>{try{for(const b of ArchiveModel.migrateStacks(read.result))store.put(b)}catch(e){migrationError=e;tx.abort()}};}
     };request.onerror=()=>reject(migrationError||request.error);request.onsuccess=()=>{request.result.onversionchange=()=>request.result.close();resolve(request.result)};
   })},
   read(db){return new Promise((resolve,reject)=>{const tx=db.transaction(this.stores,'readonly'),data={};for(const name of this.stores){const r=tx.objectStore(name).getAll();r.onsuccess=()=>data[name]=r.result}tx.oncomplete=()=>resolve(data);tx.onerror=()=>reject(tx.error)})},
