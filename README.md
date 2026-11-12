@@ -19,7 +19,7 @@ A genuinely fresh database receives one editable Sample Library with the complet
 
 ## Libraries and book workflows
 
-Create Libraries manually using **＋ Library**, even if the current one has room. Tabs display one Library at a time. Manage/Settings renames, reorders, changes background/shelf-line colors, archives and restores Libraries. Archiving preserves books and workspaces.
+Create Libraries manually using **＋ Library**, even if the current one has room. Tabs display one Library at a time. Manage/Settings renames, reorders, changes shelf-line colors, archives and restores Libraries. Archiving preserves books and workspaces.
 
 Each Library holds at most 16 non-deleted books. Full Libraries block creation, quick import and moves; no automatic overflow Library is created. The shelf scales the whole composition proportionally to fit, without horizontal scrolling. Few books begin at the left. Hover or focus a spine for title, author, progress/status and chapter. Click to enter Reader.
 
@@ -136,6 +136,16 @@ Center-drop to restack. Edge-drop separates a single book and saves `stackMode: 
 
 The header now contains Archive of Me, one compact + book menu, and application Settings. Create Book and Import EPUB retain their existing flows inside that menu. The duplicate Library heading, header subtitle, introductory footer section, instructional copy and decorative landing-page dividers are removed; the shelf line remains.
 
-Library names live in minimal tabs. The adjacent + opens an in-app Library dialog, independent of book capacity. Names are freely editable without numeric prefixes. Each tab's ⋯ opens Rename, Customize, Archive and other Library controls; the final navigation ⋯ includes archived-Library management. Library-specific settings are separate from application storage/font/backup Settings. The selected Library is saved in IndexedDB settings and restored after refresh. Empty Libraries show one understated line.
+Library names live in minimal tabs. The adjacent + opens an in-app Library dialog, independent of book capacity. Names are freely editable without numeric prefixes. The single far-right ⋯ manages the selected Library (Rename, Shelf Line Color, Archive and Manage Libraries). Library-specific settings are separate from application storage/font/backup Settings. The selected Library is saved in IndexedDB settings and restored after refresh. Empty Libraries show one understated line.
 
 `tests/library-ui.html` on the isolated port-8001 server verifies creation at 0/3/16 books, selection after reload, contextual name/colors, + menu dispatch, preservation of existing designs/membership, automatic stacks and Scale to Fit at 800px iframe width. Native prompt creation was replaced with a form dialog so the flow does not depend on browser prompt availability.
+
+## Feedback Round 01.2 — immersive shelf and shared fonts
+
+The landing surface is consistently #0A0A0A. Historical Library background values remain stored for preservation but have no visual effect and no editor; shelf-line colors and book design controls remain independent. Brand icon/wordmark use a centered flex layout. One far-right Library menu replaces per-tab menus. The shelf consumes available viewport height, with a proportional composition scale capped at 1.8× and constrained by both width and height. Stack interiors use zero gap; separate groups retain their normal spacing.
+
+Hover/focus now displays a fixed cover-led preview with metadata/status/progress. It uses the saved EPUB cover, then a saved `userCover` / `coverImage` / `customCover` Blob, otherwise a metadata cover. Corrupt covers fall back safely. Spine artwork is never substituted as a cover. Position is clamped to the viewport and does not affect shelf geometry. Touch supports a short long-press preview; moving cancels it and a held press does not also open the book.
+
+The shared Font Library feeds both studio and live Reader dropdowns. Imported font bytes are loaded into each script-free chapter iframe's own FontFaceSet, and the user's reading font takes precedence over chapter font-family rules. Spine and Reader selections remain separate. Saved Reader choices restore on reload; complete ZIP backups retain the font assets and preferences. Deleting a used font warns and saves Georgia for Reader and the default spine type as safe fallbacks. Invalid fonts are rejected before persistence.
+
+Run the isolated browser page `/tests/refinement12.html` on port 8001 for current acceptance checks. The unmodified ABeeZee TTF in `tests/fixtures/` is a regression fixture from [Google Fonts](https://github.com/google/fonts/tree/main/ofl/abeezee), accompanied by its full OFL license. It is not automatically installed into personal archives.
