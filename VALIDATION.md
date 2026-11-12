@@ -165,3 +165,32 @@ Final regressions: all four Node suites passed; JavaScript syntax and diff check
 Spines now renders the Library's direct book order into exactly one column, ignoring Shelf grouping for presentation. Every spine shares the same horizontal center. Natural maximum length and summed thickness determine a single proportional composition scale. Shelf markup, automatic/manual membership and saved book designs remain unchanged. The selected view persists in IndexedDB settings.
 
 Browser acceptance passed at 1024/1280/1440/1920px for all 16 books, one stack, centered book/stack bounds, zero adjacent gaps, preserved dimensions/order/data, hover and refresh. Direct screenshot inspection confirmed one column. At the inspected 1280px browser, shelf center was 632.5px and stack center 632.499px; stack bounds were 119.843 × 338.102px at scale 0.36316. A tall stack necessarily scales down as a whole to fit; individual books are not shrunk independently. Screenshot: parent workspace `round-04-final-single.png`. This supersedes the previous grouping into multiple presentation stacks.
+
+
+## Round 05 shared registry and Map validation
+
+### Model and persistence
+
+`node tests/world.test.cjs` passed: additive empty legacy defaults with no startup mutation; stable IDs and non-merging identical names; ordered rank IDs/multiple memberships; inverse parent/child and master/disciple deduplication; symmetric reverse deduplication; deterministic finite layouts including cyclic fictional genealogy; character deletion retaining Board notes/coordinates; valid old archive loading and rejection of invalid references/IDs. Existing library, concept, stacking and static suites also pass. All changed JavaScript passes syntax checks and `git diff --check`.
+
+There is no destructive IndexedDB upgrade. World data is a versioned optional field on existing book records and defaults lazily. Book updates retain unknown fields, existing assets, Board records and general connections. Registry validation participates in archive validation when world data is present; older ZIPs without it pass. The existing recursive ZIP serializer retains image Blobs and all world/settings references.
+
+### Real browser acceptance
+
+`tests/world.html` reached DONE using production dialogs, selectors, Map/Board rendering, real IndexedDB, a genuine PNG portrait File, ZIP encode/decode and isolated restore. It creates its explicit fictional fixture only on port 8001. Passed:
+
+- Empty Map adds no characters/cards; name-only creation; name/alias/role/source edits; loaded portrait persistence.
+- Independent creation of two sects and a family; multiple structured memberships and custom rank assignment/reordering.
+- Directed/inverse mentorship and symmetric relationship deduplication; automatic Hierarchy rank order; Family parent/partner/sibling edges; Network characters, organizations, labels and organization/type filters; zoom, Fit and Reset.
+- Linking legacy Character Cards to existing registry IDs without duplication; live card names/roles/aliases/organizations; profile rename synchronization; Board-created formal relationship appearing in Map; Map edits/deletion reflected on Board; unchanged narrative connections and independent coordinates.
+- Refresh retaining registries, memberships, links and view settings; confirmed character deletion retaining unrelated Board data.
+- Full ZIP containing portraits, characters, memberships, formal relationships and links; atomic restore into a separate fixture database; loading an older archive without world fields; retention of original Library/book IDs and unknown book fields.
+
+Direct native browser checks physically panned the Map (the transform moved +50px/+20px), used Quick Add to create an endpoint and return to the relationship form with both references preserved, then saved and rendered a `Travel companions` edge. No error/warning messages were logged in that direct session. Hierarchy, Family and Network were visually inspected; screenshots in the parent workspace are `round-05-hierarchy.png`, `round-05-family.png`, `round-05-network.png`.
+
+### Scope and limits
+
+The two approaches reference the same book.world records by stable ID; they do not maintain separate character databases. Existing narrative connections remain distinct from formal relationships. The prototype has simple automatic layouts and can require filtering/zooming for label density. It has no graph-edit undo history or spoiler timeline; existing Board card Undo remains. Node positions are generated per view, and formal Board edges use the first linked card when a character has multiple card copies. Physical map panning and Quick Add were checked directly; longer cross-browser sessions, large portraits/emblems and touch behavior remain manual. No fictional registry content is inserted into personal books automatically.
+
+
+Final Round 05 regression runs completed DONE for the full Reader/workspace suite, studio artwork/cover suite, shared-font suite, and the final 16-book single-stack suite at all four widths. The world browser suite was rerun after final UI changes and reached DONE. All five Node suites passed. Board/Map screenshots were refreshed and inspected after the final layout changes; `round-05-board.png` shows linked character profiles, formal dashed edges and the unchanged general narrative connection. The application error/warning log remained empty in the direct inspection session.
