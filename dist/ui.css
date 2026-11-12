@@ -28,5 +28,5 @@ body.workspace-open>footer{display:none}#workspace{padding-top:8px;padding-botto
 #shelfComposition .book-slot{flex-grow:0;flex-shrink:0;align-self:auto}
 
 /* Spines is a physical, horizontal presentation; no legacy list-row class. */
-#books[data-view=spines] .book-stack{gap:0}
+#books[data-view=spines] .book-stack{gap:0;align-items:center}
 #books[data-view=spines] .spines-slot{overflow:clip}

@@ -195,3 +195,10 @@ Spines now has a dedicated `spinesMarkup()` path. It visually packs Shelf units 
 The obsolete `.list` class/styles and fallback full-width row rendering branch are removed. `#books[data-view=spines]` selects zero stack gap. Natural slots define composition bounds; one shared transform fits and centers the complete Spines arrangement. No individual book is expanded to container width.
 
 Run `/tests/spines-physical.html` on isolated port 8001 for real rendered rectangles/computed styles of the shelf, composition, stack, slots and books; a five-book artwork/typography fixture at 1280/1440px; and mixed 16-book Libraries at 1024/1280/1440/1920px. These tests explicitly require every upright/tilted book to become visually horizontal without saved-data changes.
+
+
+## Round 04 final single-column correction
+
+Spines now renders the Library's direct book order into exactly one column, ignoring Shelf grouping for presentation. Every spine shares the same horizontal center. Natural maximum length and summed thickness determine a single proportional composition scale. Shelf markup, automatic/manual membership and saved book designs remain unchanged. The selected view persists in IndexedDB settings.
+
+Browser acceptance passed at 1024/1280/1440/1920px for all 16 books, one stack, centered book/stack bounds, zero adjacent gaps, preserved dimensions/order/data, hover and refresh. Direct screenshot inspection confirmed one column. At the inspected 1280px browser, shelf center was 632.5px and stack center 632.499px; stack bounds were 119.843 × 338.102px at scale 0.36316. A tall stack necessarily scales down as a whole to fit; individual books are not shrunk independently. Screenshot: parent workspace `round-04-final-single.png`. This supersedes the previous grouping into multiple presentation stacks.

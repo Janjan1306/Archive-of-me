@@ -158,3 +158,10 @@ No personal archive reset or orientation/data migration is used. Broader publish
 
 
 Final regressions: all four Node suites passed; JavaScript syntax and diff checks passed. The full Round 03 workspace suite reached DONE for Reader layout, annotation persistence, chapter positions, Split ratio/cameras, Board coordinates and ZIP fields. The Round 02 studio suite reached DONE for artwork settings, custom covers, Save/Cancel, EPUB replacement and image ZIP restore. Direct inspection of the actual port-8000 personal Library showed all 16 existing books in four horizontal presentation groups, with `class="books"` and `data-view="spines"`; its error/warning log was empty. `physical-live-library.png` records that real Library rendering. Saved personal designs and arrangements were not edited to obtain that result.
+
+
+## Round 04 final single-column correction
+
+Spines now renders the Library's direct book order into exactly one column, ignoring Shelf grouping for presentation. Every spine shares the same horizontal center. Natural maximum length and summed thickness determine a single proportional composition scale. Shelf markup, automatic/manual membership and saved book designs remain unchanged. The selected view persists in IndexedDB settings.
+
+Browser acceptance passed at 1024/1280/1440/1920px for all 16 books, one stack, centered book/stack bounds, zero adjacent gaps, preserved dimensions/order/data, hover and refresh. Direct screenshot inspection confirmed one column. At the inspected 1280px browser, shelf center was 632.5px and stack center 632.499px; stack bounds were 119.843 × 338.102px at scale 0.36316. A tall stack necessarily scales down as a whole to fit; individual books are not shrunk independently. Screenshot: parent workspace `round-04-final-single.png`. This supersedes the previous grouping into multiple presentation stacks.
