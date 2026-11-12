@@ -1,43 +1,50 @@
-# Current validation: book creation and workspace navigation
+# A1 validation and acceptance report
 
-## Passed automated checks
+## Automated suites
 
-Run `node --check dist/app.js` and `node tests/library.test.cjs`.
+- `node tests/library.test.cjs`: passed. Preserved legacy helpers, EPUB/file association, notes/appearance preservation and legacy ZIP serialization. Its historical pagination helper is not the new Library UI; A1 capacity is covered below.
+- `node tests/concept.test.cjs`: passed. Versioned migration, 33-book distribution, exactly-once conversion, malformed-record rejection, capacity blocking, book moves, duplicate pin sharing, color synchronization, keeping quotes after highlight deletion, source preservation on replacement, board edits preserving concurrent pins.
+- `node tests/static.test.cjs`: passed. Relative static entrypoint assets exist; bundled EPUB CRC/MIME/container checks pass.
+- JavaScript syntax checks and `git diff --check`: passed.
 
-- Fixed shelf boundaries for 0, 3, 16, 17, 32 and 33 books; 17th book belongs to Shelf 02.
-- Legacy appearance fallback without mutating records; landscape proportions, tilted bounding boxes, stacks and escaped text.
-- Empty book creation without a file, unique stable IDs and initialized isolated workspace notes.
-- Note create/edit/delete preserves IDs, unrelated fields and prior record state.
-- Attachment/replacement keeps the original book ID, chosen title/author, appearance, notes, reading progress and unknown workspace fields; stores EPUB metadata separately.
-- The actual existing backup handler runs with real JSZip. Its ZIP contains notes, appearance and the same book ID in library.json, and the EPUB bytes as a separate file.
-- `git diff --check` passes.
+## Isolated browser acceptance harness
 
-## Passed browser checks in the local preview
+Run on port 8001 as documented in README. The production/local user archive on port 8000 is not used by this harness. It uses the real IndexedDB, real ZIP/EPUB parsing, DOM rendering, form submission, text selection, annotation and canvas persistence handlers. Fixture confirmations are handled by the test harness itself. A first fresh run seeded the complete Alice EPUB and connected sample board. Later repeated runs retained the sample and existing fixtures.
 
-- Existing three demo records remained present at 127.0.0.1:8000; no IndexedDB version/store changes or reseeding.
-- Separate Create New Book and Import EPUB actions are visible.
-- Created “Workspace test — Sổ tay” without EPUB. Count increased from 3 to 4 and the new spine appeared immediately.
-- Selected the spine and entered its workspace directly. Reader showed the honest no-EPUB state.
-- Saved a Vietnamese text note, refreshed and confirmed the same workspace/tab and note returned.
-- Customize Book opened the existing live appearance editor from the workspace.
-- Attached the real tests/sample.epub using the file chooser. Workspace URL retained the same book ID and chosen title; action changed to Replace EPUB. Library count stayed 4, and the existing note remained present afterward.
-- Alice’s workspace had 0 notes, confirming isolation from the newly created book.
-- All three existing demo books opened their individual workspaces with clearly labeled sample excerpts.
-- Direct Import EPUB created a separate “Thành phố trong sách” workspace with an attached file and honest deferred-reader state.
-- Back to Library navigation worked between these flows.
+| Acceptance test | Result | Evidence and limits |
+| --- | --- | --- |
+| A — First-time | Passed | Fresh isolated database seeded editable Sample Library, complete Alice EPUB and connected sample cards. |
+| B — Design First | Partial | Draft not saved early; color/design saved. Cancel isolation implemented. Font/artwork uploads and drag positioning need manual coverage. |
+| C — Quick Import | Passed | Real sample EPUB created exactly one book, preserved original bytes, and allowed title correction. |
+| D — Reader | Partial | Real 15-item TOC, actual Chapter I text, saved chapter, reopening and Continue Reading passed. Start Over and all Finished/scroll edge cases need manual checks. |
+| E — Pin integration | Passed | Selected actual chapter text, pinned twice, one highlight/two independent cards, stayed in Reader, changed highlight color and verified linked quote colors, Jump to Source reached correct chapter. |
+| F — Full Canvas | Partial | Persistent creation, Undo, search, type filtering and saved Fit to Content camera passed. Pointer move/resize, group moves, connections/curve dragging, alignment, minimap clicks and Redo need manual end-to-end coverage. |
+| G — View Mode | Partial | Default View disables authoring controls and Last Pinned preserves View. Pointer editing guards inspected in code; full gesture matrix not automated. |
+| H — Shelf | Partial | Filled Library through Design First to 16, verified Scale to Fit/no horizontal scroll and disabled creation/import; 17th real import blocked. Manual Shift-drop stacking and cross-tab drag moves need gesture coverage. |
+| I — Data protection | Passed | Soft deletion retained record, restore returned it, Library archive/restore preserved books. No user records permanently deleted in tests. |
+| J — Backup | Partial | Actual ZIP export decoded/validated, restored into an isolated database retaining EPUB bytes/highlights/board. Invalid metadata and mid-transaction cloning errors preserved previous stores. Library patches retained a newer reading position. Font/image round trips and conflict-choice UI still need manual coverage. |
+| K — Migration | Passed | Actual v1 fixture with 17 books upgraded to 2 Libraries; EPUB bytes retained; note converted once; repeated open did not duplicate; corrupt notes aborted upgrade and kept v1. |
+| L — Responsive | Partial | At 390px iframe width, canvas authoring disabled and Split View hidden. Full mobile reading, touch pan/zoom and desktop divider gestures need manual review. |
 
-## Remaining manual checks / limits
+The latest full browser harness run reached DONE with all of its assertions passing. Initial defects found and fixed during validation included cover-page readiness in the test, a queued dialog-close race affecting rapid Design First submissions, correct XHTML parsing for self-closing anchors, and explicit abort on synchronous cloning failures. No acceptance item is labeled fully passed beyond its stated scope.
 
-Appearance preservation and replacement data merges are covered by model tests; a complete confirmed-replacement browser cycle and every editor control have not been re-tested end to end in this iteration. Note edit/delete are model-tested; browser creation/persistence were exercised. The file chooser automation sometimes needed an explicit Escape to leave the editor before proceeding. Invalid-file/quota failures and browser backup downloads should still be rechecked manually. The real ZIP backup serialization is covered by the Node regression test.
+## Static and console checks
 
-The 17-book boundary is tested at the model level, not by creating 17 books through browser automation. No full EPUB reader or visual board canvas is claimed. Original EPUB parsing, DRM checks, database version and store remain unchanged. Test books/notes created during browser validation are local fixtures, not seeded application content and not committed to GitHub.
+The app ran at `/dist/index.html` beneath the isolated server root, proving relative asset paths work beneath a subpath. A standalone Reader/Split View inspection loaded the real EPUB, highlights and canvas. Its browser error log was empty at inspection. The sandbox uses no script permission and a restrictive chapter CSP; external chapter resources and executable markup are omitted.
 
-## Suggested manual acceptance flow
+## Manual checklist before treating the entire brief as complete
 
-1. Create a book with a chosen title/author and no file. Open its spine and verify the empty Reader state.
-2. Customize its appearance and save. Add a note in Story Board, edit it, reload, and confirm its content.
-3. Attach sample.epub. Check ID, title, author, appearance, count and notes. Export backup and inspect those fields and the original file.
-4. Cancel Replace EPUB; confirm no change. Replace with a valid file; verify data preservation. Try invalid.epub and verify no file replacement or duplicate record.
-5. Open each demo’s excerpt and notes. Confirm no cross-book note leakage. Delete a test note only after its confirmation.
-6. Return to the library, switch views, test keyboard tab navigation and narrow-screen scrolling. Create enough books for Shelf 02 and verify membership stays fixed across resizing.
-7. Test denied storage/quota failures in a separate browser profile; no successful-save message or phantom record should appear.
+- Upload valid/invalid PNG/JPG/WebP and all four supported font types; reload and verify artwork, crop/zoom/position, independent text positions and shared fonts.
+- Drag reorder, Shift-drop stacks (2/3), move across Library tabs, reject a full destination, and use accessible menu alternatives.
+- Drag, resize, Shift-select/move groups, connect two cards, bend/label/delete an edge, align/distribute, Undo/Redo and keyboard shortcuts without stealing text editing.
+- Replace an EPUB, retain unresolved quotes, validate a surviving anchor and manually relink just one card; delete a shared highlight and confirm quote retention/color.
+- Check final-chapter Finished behavior and explicit Start Over. Short final chapter mobile completion remains incomplete.
+- Export/restore actual fonts/images, test KEEP/INCOMING merge conflicts, full destinations, Replace Restore confirmation and quota failures.
+- Resize Split View, pin without moving its camera, switch views and open Settings without losing positions.
+- Use a fresh origin to recheck first-run behavior. Do not clear an existing personal archive to simulate fresh installation.
+
+## Known implementation limits
+
+The README lists the remaining functional gaps: lower-right resizing rather than all corners; a one-parameter quadratic bend rather than a fully independent control point; CSS crop/position rather than a pixel crop editor; no EPUB2 NCX title parsing; old ZIP metadata restoration not supported; incomplete keyboard alternatives for every drag; no touch completion of a short final chapter; limited decompression defense. These are deliberately reported as unfinished. Exact quote-text validation is used instead of CFIs. Imported publisher styling, scripts, SVG and remote resources are excluded.
+
+Successful migration upgrades this origin to database version 2. Older main-branch code cannot reopen v2 using its v1 request; use an isolated origin/profile for historical code and retain a complete backup.
