@@ -131,3 +131,11 @@ Run `node tests/stacking.test.cjs`, or serve the repository on port 8001 and ope
 Adjacent horizontal books now automatically form groups of two or three, including existing records with null stack membership. Membership and bottom-to-top order are reconciled into IndexedDB on load and after layout changes; no schema reset or sample recreation is used. Existing explicit manual groups remain intact. New books default to automatic mode.
 
 Center-drop to restack. Edge-drop separates a single book and saves `stackMode: separate`, so it stays separate after refresh. Alt-drag on an edge moves an entire stack as a unit. Center-drop turns a group into a saved manual stack. Whole-shelf Scale to Fit still transforms the complete stack artwork uniformly. Earlier instructions saying stacks are never automatic are superseded by this product direction.
+
+## Feedback Round 01 — minimal Library UI
+
+The header now contains Archive of Me, one compact + book menu, and application Settings. Create Book and Import EPUB retain their existing flows inside that menu. The duplicate Library heading, header subtitle, introductory footer section, instructional copy and decorative landing-page dividers are removed; the shelf line remains.
+
+Library names live in minimal tabs. The adjacent + opens an in-app Library dialog, independent of book capacity. Names are freely editable without numeric prefixes. Each tab's ⋯ opens Rename, Customize, Archive and other Library controls; the final navigation ⋯ includes archived-Library management. Library-specific settings are separate from application storage/font/backup Settings. The selected Library is saved in IndexedDB settings and restored after refresh. Empty Libraries show one understated line.
+
+`tests/library-ui.html` on the isolated port-8001 server verifies creation at 0/3/16 books, selection after reload, contextual name/colors, + menu dispatch, preservation of existing designs/membership, automatic stacks and Scale to Fit at 800px iframe width. Native prompt creation was replaced with a form dialog so the flow does not depend on browser prompt availability.
