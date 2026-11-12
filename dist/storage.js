@@ -11,5 +11,8 @@ const ArchiveDB={
     for(const store of this.stores){const r=tx.objectStore(store).getAll();r.onsuccess=()=>{live[store]=r.result;if(--remaining)return;try{for(const name of this.stores){const old=new Map(baseline[name].map(x=>[x.id,x])),desired=new Map(next[name].map(x=>[x.id,x])),map=new Map(live[name].map(x=>[x.id,x]));for(const id of old.keys())if(!desired.has(id))map.delete(id);for(const [id,value] of desired){const prior=old.get(id);if(!prior){if(map.has(id))throw new Error('Concurrent duplicate ID; please reload.');map.set(id,value)}else{const merged={...(map.get(id)||value)};for(const [key,item] of Object.entries(value))if(item!==prior[key])merged[key]=item;map.set(id,merged)}}live[name]=[...map.values()]}ArchiveModel.validate(live);for(const name of this.stores){const s=tx.objectStore(name);s.clear();live[name].forEach(x=>s.put(x))}}catch(e){error=e;tx.abort()}}}
     tx.oncomplete=()=>resolve(live);tx.onerror=()=>reject(error||tx.error);tx.onabort=()=>reject(error||tx.error||new Error('Archive transaction aborted.'));
   })},
-  write(db,data){ArchiveModel.validate(data);return new Promise((resolve,reject)=>{const tx=db.transaction(this.stores,'readwrite');for(const name of this.stores){const s=tx.objectStore(name);s.clear();for(const record of data[name])s.put(record)}tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Archive transaction aborted.'))})}
+  write(db,data){ArchiveModel.validate(data);return new Promise((resolve,reject)=>{const tx=db.transaction(this.stores,'readwrite');let error;
+    tx.oncomplete=()=>resolve();tx.onerror=()=>reject(error||tx.error);tx.onabort=()=>reject(error||tx.error||new Error('Archive transaction aborted.'));
+    try{for(const name of this.stores){const store=tx.objectStore(name);store.clear();for(const record of data[name])store.put(record)}}catch(e){error=e;tx.abort()}
+  })}
 };
