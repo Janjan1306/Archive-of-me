@@ -87,3 +87,30 @@ The updated font/refinement browser suite also reached DONE: shared TTF import, 
 Root cause: app.js held direct references to the old preview function in form input/change listeners. Overriding the function alone did not replace those listeners; they ran after the new editor update and removed the artwork presentation. Round 02 replaces the callbacks, keeps a stable session draft with asynchronous upload guards, and uses one image renderer for preview and saved spines. Slider changes reuse the asset URL rather than replacing or revoking it.
 
 No database reset, sample recreation or destructive migration was used. Reader/Story Board JavaScript and storage/model code are unchanged. Remaining manual verification: subjective rapid-hover animation/flicker, touch long-press and physical drag gestures across browsers; diverse JPEG/WebP files and quota failures; additional laptop/desktop optical layouts. Existing A1 limitations above remain outside this refinement.
+
+
+## Feedback Round 03 and Library addendum
+
+### Automated checks
+
+All four Node suites passed: library compatibility, concept models, automatic/manual stacking and static assets. Syntax checks passed for every changed JavaScript file; `git diff --check` passed. The isolated browser `tests/workspace03.html` harness completed DONE with real production DOM handlers, a full Alice EPUB, real IndexedDB, ZIP export/decode and synthetic fixtures. It never resets the database and uses only port 8001, separate from the personal archive on port 8000.
+
+Passed browser coverage:
+
+- Three horizontal books with lengths 340/230/280 and thicknesses 45/65/55 preserve their individual proportions and typography in both views. Shelf gap returns; Spines has zero gap. A 16-book arrangement fits at 1024, 1280 and 1440px, with Library text/header/shelf alignment checked through rendered text bounds. Stack data and designs remain unchanged through toggling and refresh.
+- Long real chapter expands the iframe to complete content height with no inner scrolling; short cover chapter remains fully visible. Centered text width, initial closed drawer/settings, downward/upward toolbar visibility and overlay position/width preservation pass.
+- Select → Highlight → Add Note; repeated Pin sharing one highlight; existing highlight color synchronization; editing an existing note; Escape; Select → Add Note → Highlight/Pin. Captured context stays available after saves.
+- Reading Settings remains visible deep in a chapter; font-size reflow restores the source passage. Reader/Split/Board transitions and divider resizing retain that passage without advancing progress.
+- Split uses remaining viewport height; keyboard divider changes persist per book without auto-fit. Split Pin leaves the camera unchanged. Separate Full camera survives Split fit/return and zoom. Card coordinates and connections remain unchanged.
+- New chapters start at the top, visited chapters restore text locations, refresh retains the current source, and unknown legacy fields survive. Jump to Source applies and clears its one-second flash without changing the saved highlight color.
+- Start Over clears chapter positions/progress while retaining notes/highlights/cards. Opening the final chapter does not mark Finished; scrolling to its end does. Empty Board shows a message with no tutorial card. ZIP retains separate cameras, ratio and annotations; pre-existing book IDs and Library memberships remain present.
+
+The Round 02 studio regression completed DONE for artwork modes, Fit/Zoom/X/Y, orientation, Save/Cancel, independent cover management, actual EPUB replacement, stack presentation and asset ZIP restore. Its hover assertion now uses actual persisted chapter state, since opening/replacing an EPUB may already have saved its initial chapter. The shared-font/refinement suite completed DONE, including a real TTF loaded inside the sandboxed chapter, different rendered glyph metrics, refresh, ZIP restore and safe deletion fallbacks.
+
+### Direct browser inspection
+
+Used actual browser controls to open Contents and navigate to Chapter I. Physically dragged the Split divider (57% to approximately 51%), then selected a passage with a pointer drag and clicked Highlight → Add Note → Save without reselecting; the toolbar remained open after both actions. Reader, Split and Full Board were visually inspected. The application's error/warning log was empty during this direct interaction check. Screenshots are saved in the parent workspace: `round-03-reader.png`, `round-03-split.png`, `round-03-annotations.png`, and `round-03-board.png`.
+
+### Scope and remaining verification
+
+Location persistence uses validated chapter/text-offset anchors rather than EPUB CFIs; replacing a chapter's text may require source relinking, as before. Existing incomplete A1 features listed above remain outside this round. This round does not validate tablet/mobile touch interactions, every publisher EPUB layout, every font/image timing combination, or prolonged cross-browser gesture sessions. Actual divider dragging and annotation selection were directly tested; additional cross-browser optical and interaction review remains useful. Storage schema stays version 3; additive fields default safely for old books. No personal database reset, sample recreation, force push or main merge was performed.

@@ -69,6 +69,6 @@ const Model={
     for(const [key,value] of Object.entries(after))if(!['cards','connections'].includes(key)&&JSON.stringify(value)!==JSON.stringify(before[key]))result[key]=value;
     return result;
   },
-  replaceEPUB(book,attachment){const board=structuredClone(Model.board(book));board.cards=board.cards.map(c=>c.source?{...c,source:{...c.source,unresolved:true},highlightId:null}:c);return {...book,...attachment,board,readerPosition:null,highlights:(book.highlights||[]).map(h=>({...h,unresolved:true}))}}
+  replaceEPUB(book,attachment){const board=structuredClone(Model.board(book));board.cards=board.cards.map(c=>c.source?{...c,source:{...c.source,unresolved:true},highlightId:null}:c);return {...book,...attachment,board,readerPosition:null,chapterPositions:{},readingProgress:0,highlights:(book.highlights||[]).map(h=>({...h,unresolved:true}))}}
 };root.ArchiveModel=Model;if(typeof module!=='undefined')module.exports=Model;
 })(globalThis);
