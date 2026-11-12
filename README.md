@@ -26,9 +26,9 @@ EPUB content is never inserted as executable HTML. Imports validate the MIME ent
 ## Implemented
 
 - Three labeled demos with usable excerpts, including original Vietnamese sample text.
-- Upright books with varied heights, widths and typography; add-book placeholders.
+- Upright books with varied heights, widths and typography, slight tilts and landscape stacks; add-book placeholders.
 - Horizontal spine selection, book details and sample excerpts.
-- Responsive shelf pagination, previous/next buttons, horizontal trackpad gestures.
+- Responsive shelf pagination, previous/next buttons, horizontal scrolling within each shelf; Shift + horizontal trackpad gestures switch shelves.
 - Real DRM-free EPUB import: title, author, optional raster cover and original file storage.
 - Editable titles, author, color and typography; confirmed deletion.
 - Persistent IndexedDB library; visible storage/import errors.
@@ -61,3 +61,13 @@ The full brief's reader/annotation/board scenarios belong to Phases 2–5 and mu
 ## GitHub Pages deployment
 
 Create a repository containing these files. In GitHub Settings → Pages choose GitHub Actions. Use an upload-pages-artifact action with `path: dist` followed by deploy-pages, with `pages: write` and `id-token: write` permissions. Alternatively copy the contents of `dist/` to a publishing branch root and select that branch under Pages. All application links are relative, so repository subpaths work. HTTPS is recommended. Browser data belongs to its origin: localhost, GitHub Pages and a hosted preview have separate libraries. Export before changing origin or clearing data.
+
+## Main Library redesign
+
+The hero has been removed. Each shelf contains exactly up to 16 real books (1–16, 17–32, etc.), independent of viewport width or orientation. No filler books are created. Scroll horizontally within a shelf, or Tab through book buttons to reveal offscreen books. Previous/next and Shift + horizontal trackpad scrolling change shelves explicitly. Large collections retain readable book dimensions rather than shrinking to fit.
+
+Open a book and use **Customize Book Appearance** to edit title, author, color, typography, thickness (32–140 px), height (180–340 px), orientation and tilt (2–12 degrees). Changes preview live. Save commits them; Cancel, Close or Escape discard the draft. Reset restores that book's original legacy proportions/color/type and default orientation; it is also a draft until saved. Consecutive horizontal books form stacks of at most three; each book remains its own button. Long titles may ellipsize on the spine; full titles and authors remain in accessible button names, tooltips and details. Very thin upright spines omit the visible author to prevent text overlap.
+
+Records now optionally contain `appearance: {orientation, thickness, height, tilt, color, typography}`. Older records read their top-level `width`, `height`, `color`, and `type` without any database migration or write. The existing database name, version and keys are unchanged. Demo defaults illustrate upright, tilted-left and horizontal books; saved appearance always takes precedence. New imports use an intentional repeating size/orientation sequence. EPUB parser, DRM checks and backup code remain unchanged; the existing metadata export naturally includes appearance. Reset does not change title, author, EPUB content or other metadata.
+
+Run `node tests/library.test.cjs` for regression checks of pagination boundaries, legacy appearance fallbacks and geometry. See VALIDATION.md for browser results and remaining manual checks. This redesign is synchronized through GitHub; pushing code does not by itself update the separately hosted Sites preview.
