@@ -12,5 +12,3 @@
 .registry-link{border-top:1px solid #454e58;margin-top:18px;padding-top:6px}.registry-link h3{font-size:15px}.registry-link p{font-size:12px;line-height:1.5}.registry-card-summary{font-size:11px!important;color:#b3c5d8;line-height:1.4!important;margin-bottom:8px!important}#mapTab{white-space:nowrap}
 .split .world-tools{gap:4px;padding:5px}.split .world-tools button,.split .world-tools summary{font-size:11px;padding:5px 6px;min-height:30px;height:30px}.split .world-tools input{font-size:12px;height:30px;min-height:30px;width:130px}.split .world-camera button{font-size:10px}.split #worldInspector{width:260px}.split #worldInspector p{font-size:12px}
 @media(max-width:800px){.world-tools input{width:140px}.workspace-tabs{gap:16px}.workspace-tabs button{font-size:12px}}
-
-#worldCanvas[data-graph-view=hierarchy] .world-edge text{opacity:0}#worldCanvas[data-graph-view=hierarchy] .world-edge:is(:hover,:focus,.selected) text{opacity:1}

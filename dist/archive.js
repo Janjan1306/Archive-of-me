@@ -92,7 +92,6 @@ const originalBackToLibrary=backToLibrary;backToLibrary=function(navigate=true){
 window.addEventListener('resize',sizeWorkspace);
 let workspaceClientWidth=0;new ResizeObserver(()=>{const width=document.documentElement.clientWidth;if(width!==workspaceClientWidth){workspaceClientWidth=width;sizeWorkspace()}}).observe(document.documentElement);
 $('#splitTab').onclick=()=>setWorkspaceTab('split');
-$('.workspace-tabs').addEventListener('keydown',e=>{if(!e.target.matches('[role=tab]')||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();e.stopImmediatePropagation();const tabs=matchMedia('(max-width:700px)').matches?['reader','board',...($('#mapTab')?['map']:[])]:['reader','split','board',...($('#mapTab')?['map']:[])];let index=tabs.indexOf(workspaceTab);index=e.key==='Home'?0:e.key==='End'?tabs.length-1:(index+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;setWorkspaceTab(tabs[index]);$('#'+tabs[index]+'Tab').focus()},true);
 $('#workspacePanels').insertAdjacentHTML('beforeend','<button id="workspaceDivider" role="separator" aria-label="Resize workspace panels" aria-orientation="vertical" aria-valuemin="35" aria-valuemax="70" aria-valuenow="55"></button>');$('#workspacePanels').insertBefore($('#workspaceDivider'),$('#boardPanel'));
 function splitRatioAt(value){const width=$('#workspacePanels').clientWidth,min=Math.min(45,Math.max(35,300/width*100)),max=Math.max(55,Math.min(70,100-300/width*100));return Math.max(min,Math.min(max,value))}
 function applySplitRatio(value){value=splitRatioAt(value);$('#workspacePanels').style.setProperty('--split',value+'%');$('#workspaceDivider').setAttribute('aria-valuenow',Math.round(value));return value}
@@ -227,7 +226,7 @@ function applySpinesDesign(el,book){
   el.style.setProperty('--height',height+'px');slot.style.height=height+'px';
 }
 
-const composeRender=render;render=function(){composeRender();$('#books').querySelectorAll('[data-id]').forEach(el=>{const b=books.find(b=>b.id===el.dataset.id);if(view!=='list')applyDesign(el,b)});scaleShelf();};
+const composeRender=render;render=function(){composeRender();$('#books').querySelectorAll('[data-id]').forEach(el=>{const b=books.find(b=>b.id===el.dataset.id);if(view!=='list')applyDesign(el,b)});scaleShelf();if(typeof WorkspaceNavigation!=='undefined')WorkspaceNavigation.sync();};
 const legacyReset=$('#resetAppearance').onclick;$('#resetAppearance').onclick=()=>{legacyReset();Object.assign(designDraft,{fit:'cover',zoom:1,x:50,y:50,title:undefined,author:undefined,textColor:ink(appearanceFromForm().color)});setupStudio();updatePreview()};
 const loadedFonts=new Map();
 async function loadFonts(){for(const font of archive.fonts){if(loadedFonts.has(font.id))continue;try{const face=new FontFace('font-'+font.id,await font.file.arrayBuffer());await face.load();document.fonts.add(face);loadedFonts.set(font.id,face)}catch{message('A stored font could not be loaded: '+font.name,true)}}Reader.refreshFonts();}

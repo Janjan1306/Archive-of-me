@@ -1,0 +1,10 @@
+/* The same compact tabs and underline in every mode/presentation. */
+#workspaceNavHome{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:15;background:#0a0a0a;width:calc(var(--workspace-width,100vw) - 32px);margin-inline-start:var(--workspace-offset,calc((100% - 100vw)/2 + 16px));margin-bottom:8px}
+#workspaceNavigation.workspace-navigation{display:flex;align-items:center;gap:8px;position:relative;top:auto;margin:0;padding:0;background:transparent;border:0;flex:none;min-width:0;touch-action:pan-y}
+#workspaceNavigation.workspace-navigation button{font:500 13px/1.3 var(--ui-font);min-height:36px;padding:8px 10px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;white-space:nowrap;color:#a9a9a9;user-select:none;touch-action:none}
+#workspaceNavigation.workspace-navigation button[aria-selected=true]{color:var(--acid);border-bottom-color:var(--acid);background:transparent}#workspaceNavigation button:focus-visible{outline:2px solid var(--acid);outline-offset:-2px}
+#workspaceNavHome .workspace-expand{margin:0 0 0 auto;position:static}.workspace-expand button{min-height:34px}body.workspace-immersive #workspaceNavHome{display:none}body.workspace-immersive #workspaceNavigation{display:flex}
+#immersiveBar{padding-inline:16px}#immersiveTabs{display:flex;min-width:0;gap:0}#immersiveTitle{max-width:18vw}
+#tabInsertion{position:absolute;top:3px;bottom:3px;width:2px;background:var(--acid);pointer-events:none;z-index:3}#tabInsertion[hidden]{display:none}#workspaceNavigation .tab-dragging{opacity:.55;z-index:2;cursor:grabbing}#workspaceNavigation.reordering{cursor:grabbing}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+@media(max-width:700px){#workspaceNavigation.workspace-navigation button{font-size:11px;padding:8px 5px}#workspaceNavigation [data-workspace-mode=split]{display:none}#workspaceNavigation.workspace-navigation{gap:2px}#workspaceNavHome{gap:4px}#immersiveTitle{display:none}}
+#immersiveTabs{order:0}#immersiveTitle{order:1}#exitWorkspace{order:2}
