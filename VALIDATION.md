@@ -216,3 +216,38 @@ All five Node suites passed (library, concept, stacking, static, world), plus Ja
 Remaining manual checks: device-specific trackpad gestures, extended cross-browser use, very large graph label density and optical review at additional heights. Existing saved Map/Board cameras are respected; Reset returns a small saved overview to readable 1×. Deliberate Fit can still yield small objects for extremely large spatial content, while ordinary navigation retains readable zoom. Existing graph-layout/undo/timeline limitations from Round 05 remain.
 
 The shared-font browser regression also reached DONE after the final changes, including actual iframe FontFace rendering, independent spine/Reader preferences, refresh and font ZIP restoration. All working-mode screenshots were visually inspected. The isolated test server is separate from the personal port-8000 preview.
+
+
+## Round 06 — full-width Spines and application fullscreen (2026-11-13)
+
+Implemented on `codex/a1-full-concept` from `b58e3f7`. No merge into main, database reset, destructive migration, personal-book edits or sample recreation. Test writes use isolated port-8001 origins/fixture archives; the personal port-8000 Library was opened for visual inspection only, with its view selector changed normally.
+
+Changed source files: `dist/app.js`, `dist/archive.js`, `dist/reader.js`, `dist/ui.css`, `dist/index.html`; added `dist/immersive.js` and `dist/immersive.css`. Documentation: `README.md`, `VALIDATION.md`. Added `tests/round06.html` and `tests/round06.js`; updated Spines assertions/cache versions in `tests/workspace03.html`, `tests/workspace03.js`, `tests/studio02.html`, `tests/studio02.js`, `tests/ux-space.html`, `tests/ux-space.js`.
+
+The new rendering branch makes each horizontal spine 100% content width without a collection transform. Rows retain thickness variation, readable text, shared image-fit settings and normal page scrolling. Text positions/rotations reflow for the horizontal row while stored designs remain unchanged. Shelf geometry, natural proportions and stack logic are unchanged. The previous physical-stack width ceiling, reverse-column order and shared viewport-fit calculation no longer apply to Spines. No record dimensions or stack IDs/orders are rewritten by presentation.
+
+The fullscreen controller changes one body class and resizes the existing panels beneath a compact 44px top bar. It keeps the Reader iframe and canvas DOM mounted. Cameras preserve zoom and world-space center across entry/exit/resizing; raw screen translation changes as viewport dimensions change. Source anchors and progress suppression preserve Split passage position. Existing mode-entry Fit remains separate; fullscreen toggles do not call Fit. A generation guard prevents stale layout restoration. Modal dialogs, native selectors, tools, selection actions, drawers and inspectors receive Escape before fullscreen exits; the iframe has its own delegated Escape bridge. Focus returns to Expand, and notification/annotation layers remain above the canvas/below the compact bar where appropriate.
+
+Browser results:
+
+- `tests/round06.html`: **121 PASS, DONE**. Uses production HTML/CSS/JS, real IndexedDB and a 16-book fixture. Browser-rendered iframe viewports at 1024/1280/1440/1920px verify equal full widths, thickness variation, readable/custom typography, unchanged artwork fit/zoom/position, no horizontal overflow, zero gaps and unchanged saved dimensions/membership/order. All three fullscreen modes fill the viewport below 44px and preserve center/zoom through entry, resize and exit. Tests cover mounted Reader identity, unchanged reading progress, source passage, drawer/settings, Highlight → Add Note → Pin, divider persistence, independent Reader scrolling, card create/move/resize, minimap, explicit Fit/Reset, nested Escape, all Map views/inspector/creation, and refresh persistence of designs/cards/registry. Quote source comparison treats missing `unresolved` and explicit `false` as equivalent: the existing Reader resolves sources on refresh.
+- Updated `tests/workspace03.html`: DONE. Full-page Reader/comfortable column, toolbar/drawer, highlight/note/pin/color sharing, source navigation, chapter positions, reflow, Split cameras/ratio, progress/Finished, refresh, ZIP and preserved original membership.
+- Updated `tests/studio02.html`: DONE. Art fit/modes/zoom/position, independent custom cover, draft Save/Cancel, EPUB replacement, hover, shared alignment, zero Spines gaps and ZIP restore.
+- Updated `tests/ux-space.html`: DONE. Full-width page-scrolling Spines, unchanged Shelf/data, far/negative Board coordinates, camera controls/minimap, keyboard/trackpad pan, Undo, large graphs, explicit Fit, Split minimum widths and separate cameras.
+- `tests/world.html`: DONE. Shared character/relationship registry, labeled/inverse edges, ranks/families/organizations, linked Board cards, filtering/views, portrait uploads, refresh, ZIP/atomic restore and older archives.
+- `tests/refinement12.html`: DONE on fresh isolated `localhost:8001` origin. Actual custom FontFace glyph metrics, independent fonts, refresh, font ZIP restore and safe fallback on font removal. An initial run against the heavily accumulated `127.0.0.1:8001` fixture archive failed its old one-screen shelf-baseline assumption because dozens of test Library tabs wrapped above it; the fresh-origin run passes without resetting any archive.
+- `tests/acceptance.html`: DONE on isolated `localhost:8001`. Recently Deleted and restore, Library archive preserving books, valid ZIP restore, invalid/mid-transaction rollback, concurrent reading-position preservation, capacity/import/create flows, annotation/Board authoring and mobile restrictions.
+- All five Node suites PASS (`node --test tests/*.test.cjs`); changed JavaScript syntax checks and `git diff --check` pass.
+
+Direct native browser interaction additionally verified Split divider dragging, Board movement and resizing (the near card moved from screen x40/y132 to x300/y247, then resized from 240×180 to 314×241 at zoom 1), creating a Character named Round 06 native test with role Cartographer through the fullscreen form, closing the inspector before fullscreen with Escape, and Escape from inside the EPUB iframe. The direct session's warning/error log was empty. Fixture tests also simulate pointer handlers with the native pointer-capture boundary stubbed; native drag checks above independently validate real input.
+
+Actual personal Library at the browser's 1280×720 viewport: 16 spine widths all **1137px**, displayed heights **76–192.75px**, page scrollHeight **2085px**. Images were saved and visually inspected in the parent workspace:
+
+- `round06-spines.png` — actual personal 16-book Library, viewport capture.
+- `round06-spines-full.png` — complete vertically scrollable Library.
+- `round06-split.png` — fullscreen Split, live EPUB and Board.
+- `round06-board.png` — fullscreen Board after native move/resize, inspector and minimap.
+- `round06-map.png` — fullscreen Network with a newly created character's overlay inspector.
+- `round06-browser-results.txt` — complete 121-check acceptance output.
+
+Limitations: fullscreen state is deliberately temporary; changing workspace mode uses the normal tabs after Exit. Spines text reflows rather than preserving small-spine absolute positioning/rotation, while saved designs remain intact for Shelf/customization. Very large graph label density, extended browser/device coverage and device-specific pinch/trackpad gestures remain manual. No OS/browser native fullscreen is requested. Historical natural-length physical Spines assertions are intentionally superseded by the new Round 06 direction.

@@ -120,7 +120,7 @@ const Reader={bookId:null,revision:null,zip:null,chapters:[],index:0,frame:null,
   selectedHighlight(){const s=this.selection;return s&&(books.find(b=>b.id===this.bookId)?.highlights||[]).find(h=>h.href===s.href&&h.start===s.start&&h.end===s.end&&h.text===s.text)},
   placeSelection(){
     if(!this.selection)return;this.showToolbar();const tools=$('#selectionTools'),h=this.selectedHighlight();tools.hidden=false;if(h)$('#highlightColor').value=h.color;$('#removeSelectionHighlight').hidden=!h;$('#annotateSelection').textContent=h?.note?'Edit Note':'Add Note';$('#relinkSelection').hidden=!this.relinkCardId;
-    const range=this.rangeAt(this.selection.start,this.selection.end),rect=range?.getBoundingClientRect(),fr=this.frame.getBoundingClientRect();const left=fr.left+(rect?.left||20),top=fr.top+(rect?.bottom||20)+8;tools.style.left=Math.max(8,Math.min(innerWidth-tools.offsetWidth-8,left))+'px';tools.style.top=Math.max(8,Math.min(innerHeight-tools.offsetHeight-8,top))+'px';
+    const range=this.rangeAt(this.selection.start,this.selection.end),rect=range?.getBoundingClientRect(),fr=this.frame.getBoundingClientRect();const left=fr.left+(rect?.left||20),top=fr.top+(rect?.bottom||20)+8;tools.style.left=Math.max(8,Math.min(innerWidth-tools.offsetWidth-8,left))+'px';tools.style.top=Math.max(document.body.classList.contains('workspace-immersive')?52:8,Math.min(innerHeight-tools.offsetHeight-8,top))+'px';
   },
   dismiss(){this.selection=null;if($('#selectionTools'))$('#selectionTools').hidden=true},
   escape(){if($('#passageNote')?.open)return;this.dismiss();this.closeDrawer();if($('#readerOptions')){$('#readerOptions').hidden=true;$('#readerSettingsToggle').setAttribute('aria-expanded','false')}this.showToolbar()},

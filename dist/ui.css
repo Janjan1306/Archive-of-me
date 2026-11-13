@@ -27,9 +27,12 @@ body.workspace-open>footer{display:none}#workspace{padding-top:8px;padding-botto
 #shelfComposition .book-stack{flex:0 0 auto;width:max-content;align-items:flex-start}
 #shelfComposition .book-slot{flex-grow:0;flex-shrink:0;align-self:auto}
 
-/* Spines is a physical, horizontal presentation; no legacy list-row class. */
-#books[data-view=spines] .book-stack{gap:0;align-items:center}
-#books[data-view=spines] .spines-slot{overflow:clip}
+/* Spines is a full-width, page-scrolling presentation. Stored geometry is untouched. */
+#books[data-view=spines] .book-stack{gap:0;align-items:stretch;flex-direction:column;width:100%;max-width:none}
+#books[data-view=spines] .spines-slot{overflow:clip;max-width:none}
+#books[data-view=spines] .book{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:12px 52px 12px 24px;gap:4px;border-radius:0}
+#books[data-view=spines] .spine-number{position:absolute;right:16px;bottom:12px;left:auto;top:auto;font-size:14px;transform:none;writing-mode:horizontal-tb;width:auto}
+#books[data-view=spines] .spine-symbol{display:none}
 
 /* Working modes reserve more height for the spatial viewport; Reader chrome is unchanged. */
 body.workspace-open:has(#workspacePanels:is([data-mode=split],[data-mode=board],[data-mode=map])) header{height:72px;min-height:72px}

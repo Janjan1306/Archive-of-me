@@ -7,6 +7,8 @@ A customizable digital library and EPUB reader with visual story mapping, annota
 
 A static, browser-local library, real EPUB reader and linked Story Board. This upgrade extends the existing vanilla HTML/CSS/JavaScript app. No server, account, paid API or build step is required.
 
+Current Round 06 behavior: Spines is a full-width, page-scrolling column. Split, Story Board and Relationship Map offer an application Fullscreen button. Earlier compact/natural-length Spines sections below are historical and superseded by Round 06.
+
 ## Run
 
 ```sh
@@ -232,3 +234,14 @@ Relationship Map was implemented in Round 05. Its new Hierarchy/Family/Network v
 Drag empty space to pan; wheel/pinch zooms. Horizontal trackpad deltas pan in both axes, and Shift-wheel pans horizontally. Focus a canvas and use arrow keys to pan (Shift for a larger step), +/− to zoom, or F to Fit. Reader scrolling and selection remain independent. The Board's existing card/connection editing commands remain available inside Edit tools.
 
 Run `/tests/ux-space.html` on isolated port 8001 for readable 16-book page scrolling, all four screen widths, distant/negative cards, new-card placement/Undo, minimap viewport, Map defaults/large structures, stable cameras and Split behavior. Device-specific trackpad feel and extended cross-browser sessions remain manual; existing graph-routing and spoiler-history limitations remain unchanged.
+
+
+## Round 06 — full-width Spines and immersive workspaces
+
+Spines uses 100% of the Library content width with zero row gaps and direct Library order. Every book is presented horizontally. Display thickness starts at `max(72, 24 + thickness × 1.25)` pixels and grows to fit wrapped text. Title/author sizes have readable 20px/14px floors, preserving font family, weight, spacing, visibility and color. Horizontal text reflows rather than retaining the small natural spine's absolute text positions/rotation. Artwork uses the shared renderer with unchanged cover/contain, zoom and position settings; image aspect ratios are never stretched. Cover still crops by design, while Contain shows the entire image. Numbering stays visible except for the existing Image Only mode. Spines does not use composition scaling; normal page scrolling reveals all books. Shelf retains its existing natural dimensions, stack membership/order and proportional Scale to Fit.
+
+In Split, Story Board or Relationship Map, choose **Fullscreen** next to the workspace tabs. A 44px bar shows the book, current mode and **Exit Fullscreen**. The existing panels fill the rest of the viewport; no native Fullscreen API is involved. The panels remain mounted, retaining tools, inspectors, minimap, authoring, source selection and split divider. Toggling or resizing preserves camera zoom and world-space center. Split retains its Reader source anchor and existing progress suppression during layout changes. Fullscreen toggles never invoke Fit. Escape first closes open tools/drawers/inspectors or a native dialog, then exits; Escape inside the EPUB iframe is handled too. Exiting restores focus to the Expand control. Standalone Reader remains unchanged.
+
+Fullscreen is temporary UI state and is not restored on reload. Exit fullscreen before using the normal workspace tabs to change modes. No database/schema migration was needed, no sample regeneration was added, and saved book dimensions/arrangements remain untouched. Browser-local storage and ZIP backup remain the existing mechanisms.
+
+Current acceptance entrypoint: `tests/round06.html` (isolated port 8001). `tests/workspace03.html`, `tests/studio02.html` and `tests/ux-space.html` have updated Spines assertions for this intentional direction change. Earlier `layout04`/`spines-physical` tests document superseded natural-length Spines expectations.
