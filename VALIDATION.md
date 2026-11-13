@@ -424,3 +424,78 @@ Saved under `/Users/janjan/Documents/ChatGPT/Archive of me/`, captured from the 
 ### Remaining limitations
 
 Native Finder-to-Chrome drag remains unverified due to denied macOS Computer Use permissions; implementation and browser File-drop coordinates are covered. Very dense graphs still have the earlier prototype label/performance limits. Image assets are retained conservatively for Undo/shared references; orphan-asset garbage collection is not implemented, so repeated replacements can grow backups. Multi-image drops are validated as one batch and images are initially offset for manual arrangement. Font coverage depends on the selected font and installed fallbacks; unavailable glyphs cannot be invented. Cross-browser/device testing beyond the available browser remains future work. Existing mobile authoring restrictions and Round 08 opaque legacy-tree preservation remain unchanged.
+
+## Round 10 — visual identity, individual colors and typography (2026-11-13)
+
+Starting HEAD: `a88e8ef`, branch `codex/a1-full-concept`; remote history was fetched and checked. Implementation milestone: `a833a00`. The follow-up commit contains the final supporting-color/form-surface refinements, expanded regression cases and this report. Main is not merged.
+
+### Implementation and preserved behavior
+
+**Semantic contrast.** The audit found fixed white legends/outputs, fixed dark inspector textareas, low-contrast disabled controls, and #777 accent text on raised White surfaces. Interface text, inputs, placeholders, legends, outputs, menus, disabled states and danger actions now use semantic tokens. `--app-accent-ink` supplies readable accent text while underlines/borders retain the selected accent. `--app-danger-ink` stays readable without colored accents in light presets. Supporting surface/muted/border/edge tones adapt to valid Custom palettes, including mid-gray backgrounds; the three chosen base colors are never rewritten. Black retains its dark/yellow identity; White stays grayscale; Warm Paper uses paper neutrals. Explicit content colors and EPUB iframe appearance remain independent.
+
+**Existing layout retained.** Normal header, book information/actions and shared tabs keep the Round 09 global grid. Board/Map/Split keep matching wider frame boundaries and symmetric gutters; Reader retains its centered 850px text column. No layout rebuild was made. The reference-derived 64px logo fits the normal 72px header; the short-height header minimum is 66px to keep its lettering intact. The existing Library lock/internal Spines scrolling, shared fullscreen shell, tab reorder, Split cameras and panel swapping remain in place.
+
+**Three book typography layers.** Existing title/author font selectors are reused, with additional standard font choices. `VisualModel.bookFont` gives missing choices stable book defaults, instead of allowing author text to inherit `--ui-font`. Explicit title/author fonts remain independent per book. Numbers use the fixed Arial/Helvetica stack and tabular numerals. A real save-path issue was corrected: font-only saves no longer normalize untouched raw appearance fields. Only edited appearance properties are patched, retaining unknown fields, dimensions, orientations and artwork. UI fonts, brand typography and book typography are separate.
+
+**Edit/View sessions.** Story Board starts in Edit after a fresh page load. An explicit two-button Edit | View selector exposes aria-pressed state. A per-book in-memory session map retains a deliberate View choice across workspace/library/book navigation in that session. No book record or global data migration is used for the mode. Existing mobile authoring restrictions remain. Reader can Pin while Board is hidden or in View; Pin does not fit/pan/zoom the camera or change the chosen mode.
+
+**Individual card colors and Quote layout.** Existing Card Inspector offers Background/Text/Accent color pickers and six-digit hexadecimal inputs. Drafts preview on the selected card; Save persists; invalid hex is blocked and low contrast is warned about without replacing explicit colors. Use theme defaults clears only the known overrides, preserving unknown future fields. Accent overrides remain independent from Reader highlight colors. New optional fields are `board.cards[].colors.{background,text,accent}`; card IDs, coordinates, dimensions, connections, source anchors and other metadata remain intact.
+
+Quote Cards render type, title, full text, optional image, then secondary source metadata. No destructive migration or automatic quote shortening is used. Long text/images live in a keyboard-focusable internal scroll region when necessary. Normal wheel scrolling inside it does not zoom the canvas. Contain/Cover, resize, Jump to Source and Relink remain available. Legacy inline `card.image` Blobs automatically use the corrected order.
+
+**Shared character colors and selection.** Existing Edit Character exposes only Fill and Text, plus preview and contrast feedback. Optional `world.characters[].colors.{fill,text}` is saved on the same registry record; trees reference that record. Explicit label text uses a small fill-backed label for legibility on different canvas themes. A derived brighter fill is used for hover/selection and is not written to the record. The avatar's normal derived 2px border stays the same; selected/hovered avatars have no yellow ring, second border or box shadow. Keyboard focus has a separate dashed application-text indicator. Organization category colors remain defaults.
+
+**Reference-derived logo.** The supplied `Lưu trữ của tôi – Logo tối giản.png` is the visual source: tall six-sided book polygon, bold left-aligned Archive / of / Me inside, and external Archive of Me wordmark. The SVG preserves that composition while tuning proportions/text for header readability. Polygon and wordmark use `--app-text`; internal type uses `--app-bg`; accent does not control the logo. Fixed Arial/Helvetica branding is independent of Interface Font. The live Appearance preview uses the same markup. `assets/logo.svg` is the standalone asset; a compact A/polygon favicon has a static SVG fallback and a runtime theme-colored SVG data URL. No covers or spines receive the logo.
+
+### Changed files
+
+Production updates: `dist/appearance-model.js`, `archive.js`, `board.js`, `world.js`, `index.html`.
+
+Production additions: `dist/visual-model.js`, `content-style.js`, `content-style.css`, `contrast.css`, `brand.js`, `assets/logo.svg`, `assets/favicon.svg`.
+
+Tests: new `tests/round10.html`, `round10.js`, `round10.test.cjs`; adapted `tests/acceptance.html/js` and `round09-safety.html/js` to the intentionally new default Edit state and explicit View selector. Documentation: `README.md`, `VALIDATION.md`.
+
+### Persistence / migration
+
+No IndexedDB reset, schema upgrade, sample regeneration, entity recreation or ID rewrite. Colors are additive optional fields in existing card/registry records. Old records/backups lacking colors render with sensible defaults. Per-book fonts stay in existing `design.title.font` / `design.author.font`. Generic ZIP encoding includes the new fields and original image/font Blobs; old inline image records remain supported. Session Edit/View choice is temporary presentation state. The original port 8000 archive was not used for destructive scenarios; tests use additive owned fixtures on isolated localhost:8001 and separate restore databases.
+
+### Tests performed
+
+- **9 Node test files pass**, including migration, capacity, stacks, source-safe Board merges, shared registry/tree identity, typography isolation, optional color defaults and adaptive semantic contrast (light/dark/mid-gray Custom palettes). Static root JavaScript syntax and `git diff --check` pass.
+- **183 Round 10 browser assertions — DONE.** Legacy Quote inline-image order and unchanged connections; complete 2400-character Quote, color draft/save/invalid hex/contrast warning, source actions and refresh; Reader Pin in hidden Edit and explicit View without changing camera/choice; fresh-session Edit versus retained View; shared node colors in Network/Family/Hierarchy/Blank and no selection ring; independent per-book/UI/number/brand fonts; unchanged raw spine geometry; logo colors/three internal lines/external wordmark/favicon; expanded visible-text contrast checks (at least 4.5:1) for header, Library, Settings, Book actions, Library context, Customize Book, Board/Map inspectors and expanded tools, relationship dialog, My Trees, Split, Reader drawer/options and empty Reader in Black/White/Warm Paper/Custom; themed editing surfaces; additional mid-gray Custom checks preserving exact base values; frame/header alignment at 1024/1280/1440/1920; fullscreen switching and complete ZIP/clean-database restore.
+- **68 Round 08 browser assertions — DONE:** explicit tree membership/templates/ranks, stable relationship/local-link IDs, scoped deletion, global registry, tab order/keyboard/threshold, fullscreen/Split, old backups and data preservation.
+- **62 Reader/workspace assertions — DONE:** long/short chapters, actual progress, annotations/notes/repeated Pins, source resolution/relink-related workflow, split ratios, independent cameras, chapter return, Start Over, Finished semantics, ZIP and original memberships.
+- **139 Round 09 appearance/image assertions — DONE:** fixed Library at 1024/1280/1440/1920 × 560/900, internal full-width Spines scrolling, previews/Cancel/font fallback, four image formats, source replacement/deletion/Undo, transformed file-drop coordinates, Split 30/50/70 ratios, overlays, fullscreen, exact GIF bytes and ZIP.
+- **11 appearance/image safety assertions — DONE:** Reset cancellation, shared font deletion/fallback, shared image references, View-mode drop protection.
+- **40 studio/artwork assertions — DONE:** renderer fit/zoom/position/orientations, covers/artwork/drafts/Cancel, EPUB replacement, tooltip, stack gaps, alignment and ZIP.
+- **45 recovery/capacity assertions — DONE:** safe legacy upgrade/rollback, source Pins, intentional Edit/View behavior, Board edits/search/Undo, Library recovery, complete ZIP validation/rollback/concurrent-position preservation, 16-book capacity and import.
+
+Total: **548 passing actual-browser assertions across seven suites**, plus nine Node test files and native interactions below. Tests are browser-rendered DOM/UI tests, not model-only layout claims. Rendered text contrast checks cover the tested valid palettes; explicitly chosen low-contrast content/base colors remain permitted with warnings.
+
+Native browser interactions were also verified:
+
+- Dragging from empty header space over the custom character changed normal #173f4a to derived rgb(42,78,88) while aria-pressed remained false; clicking selected it without a ring. The real editor saved #294a64 / #fff5df on unchanged character ID `d5ae63b8-fc52-45a9-acf1-4a2c631a4b02`.
+- Native keyboard focus produced a dashed rgb(245,245,245) outline, aria-pressed false, and no avatar box shadow — a separate focus affordance, not persistent yellow selection.
+- Ordinary page scrolling returned to a real chapter; physical mouse text selection and Pin created an independent Quote. The real file chooser uploaded its PNG, and inspector hex inputs saved #e8d5ba / #20384a / #9e4d64. Rendered content order was P then IMG.
+- Physical corner resizing changed Quote `84aaa1be-45df-4e58-a8dc-ff71575c367c` from 260×200 to 365×400 without changing its card ID or image/source. Explicit navigation/focus was used for the visual capture.
+- Physical fullscreen tab dragging moved Relationship Map before Split; active Story Board remained selected. Exit/refresh preserved Reader → Relationship Map → Split View → Story Board. No main merge.
+
+### Screenshots and logs
+
+Actual browser captures, visually inspected, in `/Users/janjan/Documents/ChatGPT/Archive of me/`:
+
+- `round10-paper-network.png` — reference-derived header identity, shared character colors and selected node without a ring.
+- `round10-character-colors.png` — existing Character editor with only Fill/Text color fields.
+- `round10-keyboard-focus.png` — separate keyboard focus treatment.
+- `round10-quote-inspector.png` — full text above the image, individual color controls and theme-aware inspector surface.
+- `round10-white-quote.png`, `round10-black-quote.png` — contrasting application presets with preserved custom card colors and themed branding.
+- `round10-custom-logo-preview.png`, `round10-custom-brand-map.png` — Custom Text/Background-driven logo independent of green Accent, in preview and the actual workspace.
+- `round10-quote-fullscreen.png` — resized Quote with image below text in the shared fullscreen shell.
+- `round10-library-1024x560.png` — actual embedded short-laptop viewport, complete logo and independent title/author/fixed-number typography.
+- Logs: `round10-browser-results.txt`, `round10-round08-regression.txt`, `round10-reader-regression.txt`, `round10-image-regression.txt`, `round10-safety-regression.txt`, `round10-studio-regression.txt`, `round10-recovery-regression.txt`.
+
+Fresh full-page screenshots were used where the in-app browser's ordinary capture retained an old compositor strip; the actual header's DOM geometry, hit-testing, colors and fresh rendering were checked before delivery.
+
+### Known limitations / manual inspection
+
+Explicit low-contrast user colors are warned about and retained, as requested; arbitrary chosen colors are not forcibly made compliant. Native/system font fallbacks can vary slightly across platforms. Brand internal text is intentionally compact at header size; aesthetic review at the user's preferred browser zoom remains appropriate. Additional cross-browser/mobile/device coverage is future work; existing mobile authoring restrictions remain. Earlier prototype limits (very dense graph labeling and conservative retained image assets for Undo) remain. There are no known blocking Round 10 regressions in the tested environment.

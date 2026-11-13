@@ -7,7 +7,7 @@ A customizable digital library and EPUB reader with visual story mapping, annota
 
 A static, browser-local library, real EPUB reader and linked Story Board. This upgrade extends the existing vanilla HTML/CSS/JavaScript app. No server, account, paid API or build step is required.
 
-Current Round 09 behavior: one Book Workspace Shell supports Reader, customizable Split, Story Board and Relationship Map, including one shared compact navigation within fullscreen. Drag tabs horizontally to reorder them, or focus a tab and press Alt+Shift+Left/Right. The order is a global setting shared across books and included in complete ZIP backups. Normal clicks and ordinary arrow-key navigation still switch workspaces. The Library is viewport-fixed; full-width Spines scrolls inside its shelf region. Earlier compact/natural-length Spines sections are superseded by Round 06; Round 06 fullscreen navigation restrictions and automatic Split fitting are superseded by Round 07.
+Current Round 10 behavior: one Book Workspace Shell supports Reader, customizable Split, Story Board and Relationship Map, including one shared compact navigation within fullscreen. Drag tabs horizontally to reorder them, or focus a tab and press Alt+Shift+Left/Right. The order is a global setting shared across books and included in complete ZIP backups. Normal clicks and ordinary arrow-key navigation still switch workspaces. The Library is viewport-fixed; full-width Spines scrolls inside its shelf region. Earlier compact/natural-length Spines sections are superseded by Round 06; Round 06 fullscreen navigation restrictions and automatic Split fitting are superseded by Round 07.
 
 ## Run
 
@@ -284,3 +284,17 @@ System font choices and existing imported fonts are available. Import TTF, OTF, 
 In Story Board **Edit mode → Edit tools → Add Image**, upload PNG, JPG, WebP or GIF under 10 MB / 60 megapixels. External files may also be dropped onto the canvas; pan/zoom is accounted for. Existing Image Cards support move/resize, caption, Contain/Cover, connections, replacement and deletion. Replacing a source preserves its card ID, geometry, caption and connections. Original GIF bytes are retained rather than rasterized.
 
 New cards reference immutable Blob assets in `board.assets` through `imageAssetId`; legacy inline `card.image` Blobs continue to render and restore. Assets are retained conservatively for shared references and Undo; unused assets are not yet garbage-collected. They travel through the existing generic ZIP asset encoder. No database reset or schema upgrade is needed. `VALIDATION.md` records actual-browser results and the native desktop-drag permission limitation.
+
+## Round 10 — individual visual identity
+
+Story Board starts in **Edit** for a fresh page session. The explicit **Edit | View** control preserves a deliberate View choice while switching workspaces or books in that session. Pinning from Reader works in either mode and does not navigate the Board camera.
+
+A selected card's existing inspector now offers Background, Text and Accent color pickers plus six-digit hexadecimal fields. The selected card previews drafts; **Save card** persists optional `colors` fields. **Use theme defaults** clears only those overrides. Low text/background contrast is warned about without replacing chosen colors. Quote accent overrides do not recolor the Reader highlight. Quote Cards always render the full passage before their optional image, including legacy inline image Blobs; long passages use a keyboard-focusable internal scroll region. Contain/Cover and source actions remain available.
+
+Edit Character offers Fill and Text colors in the existing shared profile dialog. All trees reference the same registry colors; there is no per-tree copy or border-color setting. Hover/selection derive a slightly brighter fill, with no yellow selection ring. Keyboard focus uses a separate dashed indicator. Explicit label colors use a small fill-backed label for readability across canvas themes.
+
+Book title/author fonts remain in the existing Customize Book controls, independently of Interface Font. Missing per-book font choices use stable book defaults. Index numbers always use the fixed Arial/Helvetica stack with tabular numerals. Font-only saves preserve untouched stored spine geometry and artwork.
+
+The geometric SVG logo follows the supplied reference: internal **Archive / of / Me** lettering plus an external **Archive of Me** wordmark. Polygon and wordmark use application Text Color; internal lettering uses Background Color. Its Arial/Helvetica brand typography is independent of UI Font. A themed polygon favicon is derived from the same geometry. See `dist/assets/logo.svg`, `dist/assets/favicon.svg` and `VALIDATION.md`.
+
+New optional fields are `board.cards[].colors.{background,text,accent}` and `world.characters[].colors.{fill,text}`. They use existing IndexedDB records and generic complete ZIP backup/restore. No data reset, record recreation or schema upgrade is required.
