@@ -217,3 +217,18 @@ Story Board Character Cards remain independent visual cards. In Edit mode, selec
 Run `node tests/world.test.cjs` and the isolated `/tests/world.html` browser fixture on port 8001. The latter explicitly creates a separate test Library with twelve fictional characters, two sects and one family. It does not seed relationship content into user books or the Sample Library. No AI extraction, spoiler inference or historical timeline is included.
 
 Prototype limits: graph layouts are deterministic rather than force-directed, with manual zoom/filtering useful for dense 10–30-character networks. Some edge labels can overlap. Family layout supports known multiple-parent/partner relationships but is not a full genealogy routing engine. If a character has multiple Board card copies, a formal relationship is drawn using the first linked copy of each endpoint. Map nodes use generated positions rather than manual placement. Rank editing is text-list based. Full temporal/spoiler history, automatic extraction and cross-browser/touch gesture coverage remain future work.
+
+
+## UX refinement — readable Spines and expansive spatial workspaces
+
+The single centered Spines column now favors readable natural designs over fitting every book above the fold. The entire composition uses a target minimum scale of 1.25 (bounded by available width), increases toward the existing 1.8 cap when height permits, and expands the shelf section vertically when needed. Normal page scrolling reveals the complete stack. Shelf View keeps its previous screen-fit calculation. No per-book dimensions or artwork are changed.
+
+Working modes use compact header/metadata spacing and a compact Board `Edit tools` popover, leaving more viewport height for the canvas. Reader mode retains its existing page layout. Small gutters and available-width sizing account for scrollbar transitions. The visible viewport clips only the current camera window; the virtual world consists of independent card/node coordinates and can extend beyond the viewport in any direction.
+
+Full Board does not fit itself on creation, edits or resizing. New cards are placed at the current camera center, and cards may be moved into negative coordinates. The minimap includes the camera viewport as well as all content, and can retrieve distant cards. Reset returns to 1×. Fit is deliberate, except for the previously agreed one-time fit when entering Split. Divider changes and Pin leave the Split camera alone; returning Full Board restores its camera.
+
+Relationship Map was implemented in Round 05. Its new Hierarchy/Family/Network views now start at readable 1× and allow large structures to extend offscreen rather than auto-fitting on open or view changes. Existing saved cameras are respected; Reset View returns an older small saved camera to 1×. Fit remains available for an overview. Registry edits and resizing do not auto-fit.
+
+Drag empty space to pan; wheel/pinch zooms. Horizontal trackpad deltas pan in both axes, and Shift-wheel pans horizontally. Focus a canvas and use arrow keys to pan (Shift for a larger step), +/− to zoom, or F to Fit. Reader scrolling and selection remain independent. The Board's existing card/connection editing commands remain available inside Edit tools.
+
+Run `/tests/ux-space.html` on isolated port 8001 for readable 16-book page scrolling, all four screen widths, distant/negative cards, new-card placement/Undo, minimap viewport, Map defaults/large structures, stable cameras and Split behavior. Device-specific trackpad feel and extended cross-browser sessions remain manual; existing graph-routing and spoiler-history limitations remain unchanged.

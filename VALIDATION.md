@@ -194,3 +194,25 @@ The two approaches reference the same book.world records by stable ID; they do n
 
 
 Final Round 05 regression runs completed DONE for the full Reader/workspace suite, studio artwork/cover suite, shared-font suite, and the final 16-book single-stack suite at all four widths. The world browser suite was rerun after final UI changes and reached DONE. All five Node suites passed. Board/Map screenshots were refreshed and inspected after the final layout changes; `round-05-board.png` shows linked character profiles, formal dashed edges and the unchanged general narrative connection. The application error/warning log remained empty in the direct inspection session.
+
+
+## UX refinement: readable stack and expansive canvases
+
+The old Spines calculation always took the minimum of width-fit and height-fit. Sixteen books with a combined natural thickness of 1050px were scaled to 0.361049 to fit one screen, producing a 119.146 × 379.102px composition. The new uniform scale floor favors readability and lets the page grow. In the same real Library, with the same 16 books at the same 1280×720 viewport, the composition measured 412.5 × 1312.5px at scale 1.25 (about 3.46× larger linearly). Before/after screenshots were inspected (the new capture includes the full scrollable section); one centered column, natural proportions and touching edges are preserved. Native page scrolling moved scrollTop from 0 to 720 through the enlarged stack. Evidence: parent workspace `ux-spines-before.png` and `ux-spines-after.png`.
+
+The viewport and virtual content are separate. Compact working-mode chrome and Board authoring popover increase the interaction area. Board/world content retains independent coordinates, including negative and distant positions. Full Board retains its camera on edits/resize; Map no longer auto-fits a new view. Split retains its intentional initial Fit and separate camera. A root width observer handles scrollbar removal after switching from long reading/Spines pages so canvas gutters remain correct. Reader mode's chrome and text column are unchanged.
+
+`tests/ux-space.html` reached DONE. At 1024/1280/1440/1920px it verifies:
+
+- Readable uniform scale, one shared center, zero gaps, full unclipped section bounds, no horizontal overflow, ordinary page scrolling to the bottom spine, unchanged Shelf presentation and saved appearance/arrangement records.
+- Board width/gutters and occupation of remaining height, preserved saved camera on resize, keyboard and two-axis wheel panning, a visible minimap viewport, explicit Fit retrieving cards at positive/negative coordinates, Reset, creation in an explored region beyond the initial viewport without camera movement, and Undo preserving original coordinates/connections.
+- An 18-character Network, eight-rank hierarchy and multi-generation family at readable 1×; structures extending beyond the viewport; all-width Map occupancy, independent panning, explicit Fit/Reset, and registry edits retaining the camera.
+- Wide Split panels with practical minimum widths at all four widths; initial Fit; stable camera through divider/viewport changes; expanded height; restoration of the Full camera; unchanged original card dimensions/connections and registry relationships.
+
+Direct native inspection created a new note through Edit tools, edited it, resized it from 260×200 to 300×230px, panned the Board, and dragged the Split divider while the camera remained translate(40px,40px) scale(1). A Map pan changed translate(30px,30px) to translate(-50px,-30px) at the same 1× zoom. Clicking the minimap retrieved the previously offscreen `far` card fully into view with its unchanged 260×210px dimensions. The direct session's error/warning log was empty. Working viewport screenshots were captured and inspected: `ux-board.png`, `ux-split.png`, `ux-map.png` in the parent workspace.
+
+All five Node suites passed (library, concept, stacking, static, world), plus JavaScript syntax and diff checks. Browser regressions for the full Reader/workspace, shared registry/relationships and studio artwork/cover flows reached DONE. They include annotations, chapter locations, Split ratios/separate cameras, portrait/art assets, ZIP restore and older archives. No personal database reset, sample recreation or persisted book/card-dimension migration was performed.
+
+Remaining manual checks: device-specific trackpad gestures, extended cross-browser use, very large graph label density and optical review at additional heights. Existing saved Map/Board cameras are respected; Reset returns a small saved overview to readable 1×. Deliberate Fit can still yield small objects for extremely large spatial content, while ordinary navigation retains readable zoom. Existing graph-layout/undo/timeline limitations from Round 05 remain.
+
+The shared-font browser regression also reached DONE after the final changes, including actual iframe FontFace rendering, independent spine/Reader preferences, refresh and font ZIP restoration. All working-mode screenshots were visually inspected. The isolated test server is separate from the personal port-8000 preview.
