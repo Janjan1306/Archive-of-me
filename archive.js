@@ -264,11 +264,11 @@ async function initializeArchive(){try{
     if(fresh){
       const response=await fetch('sample-content/archive-of-me-final-11-book-library-seed.zip');
       if(!response.ok)throw new Error('The Sample Library seed is unavailable. Reload when the public assets are available.');
-      const seedFile=new File([await response.blob()],'archive-of-me-final-six-book-library-seed.zip',{type:'application/zip'});
+      const seedFile=new File([await response.blob()],'archive-of-me-final-11-book-library-seed.zip',{type:'application/zip'});
       const imported=await SampleLibrary.importPackage(seedFile);
       if(!imported.installed)throw new Error('The Sample Library could not be installed in this new browser profile.');
+      await setting('initialized',true);
     }
-    await setting('initialized',true);
   }
   view=getSetting('libraryView','shelf')==='list'?'list':'shelf';currentLibraryId=getSetting('activeLibrary',null)||activeLibraries()[0]?.id||null;render();restoreRoute();if(!getSetting('reminderSince',0))await setting('reminderSince',Date.now());const days=getSetting('backupReminder',14);if(days&&(Date.now()-getSetting('lastBackup',getSetting('reminderSince')))>days*86400000)message('Time to back up your archive. Open Settings → Export complete ZIP.',true);
 }catch(e){serious(e);document.body.classList.add('storage-failed')}finally{document.body.classList.remove('busy')}}
