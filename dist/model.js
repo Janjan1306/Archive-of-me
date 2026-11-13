@@ -68,7 +68,8 @@ const Model={
   mergeBoard(current,before,after){
     const result={...current};
     for(const key of ['cards','connections']){const old=new Map(before[key].map(x=>[x.id,x])),next=new Map(after[key].map(x=>[x.id,x])),live=new Map(current[key].map(x=>[x.id,x]));for(const [id,value] of old)if(!next.has(id))live.delete(id);for(const [id,value] of next){const prior=old.get(id);if(!prior){live.set(id,value);continue}const merged={...(live.get(id)||value)};for(const [k,v] of Object.entries(value))if(JSON.stringify(v)!==JSON.stringify(prior[k]))merged[k]=v;live.set(id,merged)}result[key]=[...live.values()]}
-    for(const [key,value] of Object.entries(after))if(!['cards','connections'].includes(key)&&JSON.stringify(value)!==JSON.stringify(before[key]))result[key]=value;
+    if(current.assets||after.assets)result.assets={...current.assets,...after.assets};
+    for(const [key,value] of Object.entries(after))if(!['cards','connections','assets'].includes(key)&&JSON.stringify(value)!==JSON.stringify(before[key]))result[key]=value;
     return result;
   },
   replaceEPUB(book,attachment){const board=structuredClone(Model.board(book));board.cards=board.cards.map(c=>c.source?{...c,source:{...c.source,unresolved:true},highlightId:null}:c);return {...book,...attachment,board,readerPosition:null,chapterPositions:{},readingProgress:0,highlights:(book.highlights||[]).map(h=>({...h,unresolved:true}))}}
