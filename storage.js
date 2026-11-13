@@ -1,0 +1,31 @@
+/* Version upgrades and archive restores commit atomically. No destructive re-creation. */
+const ArchiveDB={
+  stores:['books','libraries','fonts','settings'],
+  open(name='personal-reading-workspace'){return new Promise((resolve,reject)=>{let migrationError;const request=indexedDB.open(name,3);request.onblocked=()=>reject(new Error('Close other tabs of Archive of Me, then reload to finish the safe database upgrade.'));
+    request.onupgradeneeded=event=>{const db=request.result,tx=request.transaction;for(const name of this.stores)if(!db.objectStoreNames.contains(name))db.createObjectStore(name,{keyPath:'id'});
+      if(event.oldVersion===1){const store=tx.objectStore('books'),read=store.getAll();read.onsuccess=()=>{try{const migrated=ArchiveModel.migrate(read.result);ArchiveModel.validate({...migrated,fonts:[],settings:[]});for(const b of ArchiveModel.migrateStacks(migrated.books))store.put(b);for(const l of migrated.libraries)tx.objectStore('libraries').put(l);tx.objectStore('settings').put({id:'initialized',value:true});}catch(e){migrationError=e;tx.abort()}};}
+      if(event.oldVersion===2){const store=tx.objectStore('books'),read=store.getAll();read.onsuccess=()=>{try{for(const b of ArchiveModel.migrateStacks(read.result))store.put(b)}catch(e){migrationError=e;tx.abort()}};}
+    };request.onerror=()=>reject(migrationError||request.error);request.onsuccess=()=>{request.result.onversionchange=()=>request.result.close();resolve(request.result)};
+  })},
+  read(db){return new Promise((resolve,reject)=>{const tx=db.transaction(this.stores,'readonly'),data={};for(const name of this.stores){const r=tx.objectStore(name).getAll();r.onsuccess=()=>data[name]=r.result}tx.oncomplete=()=>resolve(data);tx.onerror=()=>reject(tx.error)})},
+  patch(db,next,baseline){return new Promise((resolve,reject)=>{const tx=db.transaction(this.stores,'readwrite'),live={};let remaining=this.stores.length,error;
+    for(const store of this.stores){const r=tx.objectStore(store).getAll();r.onsuccess=()=>{live[store]=r.result;if(--remaining)return;try{for(const name of this.stores){const old=new Map(baseline[name].map(x=>[x.id,x])),desired=new Map(next[name].map(x=>[x.id,x])),map=new Map(live[name].map(x=>[x.id,x]));for(const id of old.keys())if(!desired.has(id))map.delete(id);for(const [id,value] of desired){const prior=old.get(id);if(!prior){if(map.has(id))throw new Error('Concurrent duplicate ID; please reload.');map.set(id,value)}else{const merged={...(map.get(id)||value)};for(const [key,item] of Object.entries(value))if(item!==prior[key])merged[key]=item;map.set(id,merged)}}live[name]=[...map.values()]}ArchiveModel.validate(live);for(const name of this.stores){const s=tx.objectStore(name);s.clear();live[name].forEach(x=>s.put(x))}}catch(e){error=e;tx.abort()}}}
+    tx.oncomplete=()=>resolve(live);tx.onerror=()=>reject(error||tx.error);tx.onabort=()=>reject(error||tx.error||new Error('Archive transaction aborted.'));
+  })},
+  installSeed(db,data,seedId){return new Promise((resolve,reject)=>{const tx=db.transaction(this.stores,'readwrite'),live={};let remaining=this.stores.length,error,result;
+    for(const name of this.stores){const r=tx.objectStore(name).getAll();r.onsuccess=()=>{live[name]=r.result;if(--remaining)return;try{const marker='seed-installed:'+seedId,existing=live.libraries.find(l=>l.seedIdentity===seedId),installed=live.settings.find(s=>s.id===marker);if(existing||installed){result={installed:false,libraryId:existing?.id||installed.value.libraryId};return}
+      if(data.libraries.length!==1||data.settings.length)throw new Error('A Library seed must contain one Library and no global settings.');
+      const next={...live};for(const name of ['libraries','books','fonts']){if(data[name].some(x=>live[name].some(y=>y.id===x.id)))throw new Error('Seed IDs conflict with existing records. Nothing was imported.');next[name]=[...live[name],...data[name]]}
+      const library={...data.libraries[0],seedIdentity:seedId,order:Math.max(-1,...live.libraries.map(l=>l.order))+1};next.libraries=next.libraries.map(l=>l.id===library.id?library:l);ArchiveModel.validate(next);
+      for(const book of data.books)tx.objectStore('books').add(book);for(const font of data.fonts)tx.objectStore('fonts').add(font);tx.objectStore('libraries').add(library);tx.objectStore('settings').add({id:marker,value:{libraryId:library.id,installedAt:Date.now()}});result={installed:true,libraryId:library.id};
+    }catch(e){error=e;tx.abort()}}}tx.oncomplete=()=>resolve(result);tx.onerror=tx.onabort=()=>reject(error||tx.error||new Error('Sample installation aborted.'));
+  })},
+  deleteLibrary(db,id,expected){return new Promise((resolve,reject)=>{const tx=db.transaction(this.stores,'readwrite'),live={};let remaining=this.stores.length,error,result;
+    for(const name of this.stores){const r=tx.objectStore(name).getAll();r.onsuccess=()=>{live[name]=r.result;if(--remaining)return;try{const next=ArchiveModel.deleteLibrary(live,id,expected),removed=live.books.filter(b=>b.libraryId===id);tx.objectStore('libraries').delete(id);for(const book of removed)tx.objectStore('books').delete(book.id);for(const setting of next.settings)if(setting!==live.settings.find(s=>s.id===setting.id))tx.objectStore('settings').put(setting);result={libraryId:id,bookIds:removed.map(b=>b.id)};}catch(e){error=e;tx.abort()}}}
+    tx.oncomplete=()=>resolve(result);tx.onerror=tx.onabort=()=>reject(error||tx.error||new Error('Library deletion failed. No changes were committed.'));
+  })},
+  write(db,data){ArchiveModel.validate(data);return new Promise((resolve,reject)=>{const tx=db.transaction(this.stores,'readwrite');let error;
+    tx.oncomplete=()=>resolve();tx.onerror=()=>reject(error||tx.error);tx.onabort=()=>reject(error||tx.error||new Error('Archive transaction aborted.'));
+    try{for(const name of this.stores){const store=tx.objectStore(name);store.clear();for(const record of data[name])store.put(record)}}catch(e){error=e;tx.abort()}
+  })}
+};

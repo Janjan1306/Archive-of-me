@@ -1,0 +1,277 @@
+/* A1 controller extends the existing library and studio, preserving the version-1 book records. */
+document.body.insertAdjacentHTML('beforeend',`<aside id="bookPreview" role="tooltip" hidden></aside><dialog id="errorDialog"><h2>Could not complete this action</h2><p id="errorText"></p><button class="close">Close</button></dialog><dialog id="settingsDialog"><div class="dialog-top"><span>ARCHIVE OF ME</span><button class="close" aria-label="Close Settings">×</button></div><div id="settingsBody"></div></dialog><dialog id="bookMenu"><div class="dialog-top"><span>BOOK ACTIONS</span><button class="close">×</button></div><div id="bookMenuBody"></div></dialog>`);
+document.body.insertAdjacentHTML('beforeend',`<dialog id="libraryEditor"><form id="libraryForm"><div class="dialog-top"><span id="libraryEditorTitle">Create Library</span><button type="button" class="close" aria-label="Close Library dialog">×</button></div><label>Library name<input name="name" required maxlength="100" autocomplete="off"></label><div class="settings-row"><label>Shelf line<input name="line" type="color" value="#77776c"></label></div><div class="dialog-actions"><button type="button" class="close">Cancel</button><button class="primary" type="submit">Save Library</button></div></form></dialog><dialog id="libraryContext"><div class="dialog-top"><span id="libraryContextTitle"></span><button class="close" aria-label="Close Library menu">×</button></div><div class="compact-menu"><button id="renameLibrary">Rename</button><button id="customizeLibrary">Shelf Line Color</button><button id="archiveLibrary">Archive</button><button id="otherLibrarySettings">Manage Libraries</button></div></dialog>`);
+let editingLibraryId=null;
+function openLibraryEditor(id=null){editingLibraryId=id;const library=archive.libraries.find(l=>l.id===id),form=$('#libraryForm');form.reset();form.elements.name.value=library?.name||'';form.elements.line.value=library?.line||'#77776c';$('#libraryEditorTitle').textContent=library?'Edit Library':'Create Library';$('#libraryEditor').showModal();form.elements.name.focus()}
+function openLibraryContext(id){const library=archive.libraries.find(l=>l.id===id);$('#libraryContextTitle').textContent=library.name;$('#libraryContext').showModal();for(const action of ['renameLibrary','customizeLibrary'])$('#'+action).onclick=()=>{$('#libraryContext').close();openLibraryEditor(id)};$('#archiveLibrary').onclick=async()=>{try{await saveArchive({...archive,books,libraries:archive.libraries.map(l=>l.id===id?{...l,archived:true}:l)});$('#libraryContext').close();await setting('activeLibrary',currentLibraryId)}catch(e){serious(e)}};$('#otherLibrarySettings').onclick=()=>{$('#libraryContext').close();openSettings('libraries')}}
+$('#libraryForm').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,name=form.elements.name.value.trim();if(!name)return;const submit=form.querySelector('[type=submit]');submit.disabled=true;try{const id=editingLibraryId||crypto.randomUUID(),existing=archive.libraries.find(l=>l.id===id),library={...existing,id,name,background:existing?.background||'#0a0a0a',line:form.elements.line.value,order:existing?.order??archive.libraries.length,archived:existing?.archived??false};await saveArchive({...archive,books,libraries:existing?archive.libraries.map(l=>l.id===id?library:l):[...archive.libraries,library]});currentLibraryId=id;await setting('activeLibrary',id);render();$('#libraryEditor').close();message(existing?'Library saved.':'Library created.')}catch(e){serious(e)}finally{submit.disabled=false}};
+let archive={books:[],libraries:[],fonts:[],settings:[]},currentLibraryId=null,creationDraft=null,dragBookId=null,dragLibraryId=null,designDraft=null;
+const objectURLs=new Map();
+function assetURL(blob){if(!(blob instanceof Blob))return '';if(!objectURLs.has(blob))objectURLs.set(blob,URL.createObjectURL(blob));return objectURLs.get(blob)}
+async function validateImage(file){if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>10*1024*1024)throw new Error('Choose a PNG, JPG or WebP under 10 MB.');const image=await createImageBitmap(file);image.close();}
+function serious(error){message(error.message||String(error),true);const dialog=$('#errorDialog');$('#errorText').textContent=error.message||String(error);if(!dialog.open)dialog.showModal()}
+function activeBooks(id=currentLibraryId){return books.filter(b=>!b.deletedAt&&b.libraryId===id).sort((a,b)=>(a.order||0)-(b.order||0))}
+function activeLibraries(){return archive.libraries.filter(l=>!l.archived).sort((a,b)=>a.order-b.order)}
+async function reloadArchive(){archive=await ArchiveDB.read(db);books=archive.books;await loadFonts()}
+async function saveArchive(next,replace=false){const baseline={...archive,books};if(replace){await ArchiveDB.write(db,next);archive=next}else archive=await ArchiveDB.patch(db,next,baseline);books=archive.books;render()}
+async function setting(id,value){await new Promise((resolve,reject)=>{const tx=db.transaction('settings','readwrite');tx.objectStore('settings').put({id,value});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});archive.settings=archive.settings.filter(s=>s.id!==id).concat({id,value})}
+function getSetting(id,fallback){return archive.settings.find(s=>s.id===id)?.value??fallback}
+function ensureCapacity(id=currentLibraryId){archive.books=books;if(!ArchiveModel.canAdd(archive,id))throw new Error('This Library is full (16/16) or archived. Select or create another Library first.');}
+const originalPersist=persist;
+persist=async function(book){if(!books.some(b=>b.id===book.id)){ensureCapacity(book.libraryId||currentLibraryId);book.libraryId=book.libraryId||currentLibraryId;book.order=Date.now()}await originalPersist(book)};
+// Keep transaction-based updates from app.js and mirror the archive's in-memory books.
+const originalUpdate=updateBook;updateBook=async function(id,change){const b=await originalUpdate(id,change);archive.books=books;return b};
+const originalBookMarkup=bookMarkup;
+bookMarkup=function(b,index,preview=false,presentation='shelf'){const html=originalBookMarkup(b,index,preview,presentation);if(preview)return html;return html.replace('data-id=',`draggable="true" data-id=`).replace(' title="',` title="${escapeHTML((b.finished?'Finished':b.readerPosition?'Reading':'Not started')+' · '+Math.round((b.readerPosition?.progress||0)*100)+'% · '+(b.readerPosition?.chapter||'No chapter yet'))} — `)};
+// Shelf units retain saved membership and bottom-to-top order. Spines uses Library
+// order for presentation; it never writes dimensions, orientations or stack relationships.
+function shelfUnits(row){const normalized=ArchiveModel.autoStack(row),used=new Set(),units=[];for(const book of normalized){if(used.has(book.id))continue;const group=book.stackId&&ArchiveModel.horizontal(book)?ArchiveModel.stackMembers(normalized,book):[book];group.forEach(b=>used.add(b.id));units.push(group)}return units}
+shelfMarkup=function(row){return shelfUnits(row).map(group=>group.length>1?'<div class="book-stack" data-stack="'+escapeHTML(group[0].stackId)+'">'+group.map(b=>bookMarkup(b,row.findIndex(x=>x.id===b.id))).join('')+'</div>':bookMarkup(group[0],row.findIndex(x=>x.id===group[0].id))).join('')};
+function spinesMarkup(row){return row.length?'<div class="book-stack" data-presentation-stack="single">'+row.map((b,index)=>bookMarkup(b,index,false,'spines')).join('')+'</div>':''}
+$('#spineView').onclick=()=>{view='shelf';render();setting('libraryView',view).catch(serious)};$('#listView').onclick=()=>{view='list';render();setting('libraryView',view).catch(serious)};
+function stackDropIntent(event,source,target){
+  if(!source||!target||source.id===target.id||!ArchiveModel.horizontal(source)||!ArchiveModel.horizontal(target))return false;
+  const rect=event.currentTarget.getBoundingClientRect(),x=(event.clientX-rect.left)/rect.width;
+  return !event.altKey&&(event.shiftKey||(x>.22&&x<.78));
+}
+
+pages=function(){return [activeBooks()]};
+render=function(){persistAutomaticStacks();const libs=activeLibraries();if(!libs.some(l=>l.id===currentLibraryId))currentLibraryId=libs[0]?.id||null;const lib=archive.libraries.find(l=>l.id===currentLibraryId),row=activeBooks();
+  $('#libraryTabs').innerHTML=libs.map(l=>`<button draggable="true" data-library="${escapeHTML(l.id)}" aria-current="${l.id===currentLibraryId?'page':'false'}" class="${l.id===currentLibraryId?'active':''}">${escapeHTML(l.name)}</button>`).join('')+'<button id="newLibrary" aria-label="Create Library">+</button><button id="manageLibraries" aria-label="Manage Libraries including archived">⋯</button>';
+  $('#library').style.background='#0a0a0a';$('#books').style.borderColor=lib?.line||'#77776c';$('#books').className='books';$('#books').dataset.view=view==='list'?'spines':'shelf';$('#books').setAttribute('aria-label',view==='list'?'Spines — scroll within the shelf to explore books':'Current shelf — scale to fit');SpineArtwork.release($('#books'));$('#books').innerHTML='<div id="shelfComposition">'+(view==='list'?spinesMarkup(row):shelfMarkup(row))+'</div>';
+  $('#count').textContent=row.length+'/16';$('#shelfLabel').textContent='';$('#libraryEmpty').hidden=row.length>0;$('#libraryEmpty').textContent=lib?'No books yet. Use + to add a book.':'Create a Library with + to begin.';$('#shelfCaption').textContent='Click to read · Right-click a book for actions';$('#previous').hidden=true;$('#next').hidden=true;$('#pageCount').textContent='';$('#spineView').classList.toggle('active',view==='shelf');$('#listView').classList.toggle('active',view==='list');
+  document.querySelectorAll('header .create-book,header .import').forEach(el=>el.disabled=!lib||row.length>=16);$('#bookCapacityHint').hidden=!!lib&&row.length<16;
+  $('#newLibrary').onclick=()=>openLibraryEditor();
+  $('#manageLibraries').setAttribute('aria-label',lib?'Library settings: '+lib.name:'Manage Libraries');$('#manageLibraries').onclick=()=>lib?openLibraryContext(lib.id):openSettings('libraries');
+  $('#libraryTabs').querySelectorAll('[data-library]').forEach(el=>{el.onclick=async()=>{currentLibraryId=el.dataset.library;render();try{await setting('activeLibrary',currentLibraryId)}catch(e){serious(e)}};el.ondragstart=e=>{if(e.target===el){dragLibraryId=el.dataset.library;dragBookId=null;e.dataTransfer.setData('text/plain',dragLibraryId)}};el.ondragover=e=>{e.preventDefault();el.classList.add('drop-target')};el.ondragleave=()=>el.classList.remove('drop-target');el.ondrop=async e=>{e.preventDefault();el.classList.remove('drop-target');try{if(dragBookId){if(books.find(b=>b.id===dragBookId)?.libraryId!==el.dataset.library)await saveArchive(ArchiveModel.move({...archive,books},dragBookId,el.dataset.library))}else if(dragLibraryId){const reordered=[...libs],from=reordered.findIndex(l=>l.id===dragLibraryId),to=reordered.findIndex(l=>l.id===el.dataset.library);reordered.splice(to,0,reordered.splice(from,1)[0]);await saveArchive({...archive,books,libraries:archive.libraries.map(l=>({...l,order:reordered.findIndex(x=>x.id===l.id)>=0?reordered.findIndex(x=>x.id===l.id):l.order}))})}}catch(e){serious(e)}dragBookId=null;dragLibraryId=null}});
+  $('#books').querySelectorAll('[data-id]').forEach(el=>{el.ondragstart=e=>{dragBookId=el.dataset.id;dragLibraryId=null;e.dataTransfer.setData('text/plain',dragBookId)};el.ondragover=e=>{e.preventDefault();const stack=stackDropIntent(e,books.find(b=>b.id===dragBookId),books.find(b=>b.id===el.dataset.id));el.classList.toggle('stack-target',stack);el.classList.toggle('drop-target',!stack);el.dataset.dropHint=stack?'Stack here (max 5)':e.altKey?'Move entire stack':'Reorder beside (separate book)';$('#shelfCaption').textContent=el.dataset.dropHint;e.dataTransfer.dropEffect='move'};el.ondragend=()=>{dragBookId=null;$('#shelfCaption').textContent='Click to read · Right-click a book for actions';$('#books').querySelectorAll('.stack-target,.drop-target').forEach(n=>n.classList.remove('stack-target','drop-target'))};el.ondragleave=()=>el.classList.remove('stack-target','drop-target');el.ondrop=async e=>{e.preventDefault();const id=dragBookId,target=el.dataset.id;if(!id||id===target)return;try{if(stackDropIntent(e,books.find(b=>b.id===id),books.find(b=>b.id===target))){const rect=el.getBoundingClientRect(),above=e.clientY<rect.top+rect.height/2;await saveArchive({...archive,books:ArchiveModel.stackBooks(books,id,target,above)})}else{const source=books.find(b=>b.id===id),moving=e.altKey&&source.stackId?ArchiveModel.stackMembers(books,source).map(b=>b.id):[id];
+if(moving.includes(target))return;const ids=row.map(b=>b.id).filter(id=>!moving.includes(id)),to=ids.indexOf(target);ids.splice(Math.max(0,to),0,...moving);
+await saveArchive({...archive,books:books.map(x=>ids.includes(x.id)?{...x,order:ids.indexOf(x.id),...(moving.includes(x.id)&&e.altKey&&moving.length>1?{stackMode:'manual'}:x.id===id&&!e.altKey?{stackId:null,stackOrder:null,stackMode:'separate'}:{})}:x)})}}catch(e){serious(e)}finally{dragBookId=null;render()}};el.oncontextmenu=e=>{e.preventDefault();manageBook(el.dataset.id)};el.onpointerenter=e=>{if(e.pointerType!=='touch')showCoverPreview(el)};el.onpointerleave=hideCoverPreview;el.onfocus=()=>showCoverPreview(el);el.onblur=hideCoverPreview;el.addEventListener('dragstart',()=>hideCoverPreview(true));
+let touchStart;el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'){touchStart={x:e.clientX,y:e.clientY};el.coverTimer=setTimeout(()=>{el.coverHeld=true;showCoverPreview(el)},500)}});el.addEventListener('pointermove',e=>{if(touchStart&&Math.hypot(e.clientX-touchStart.x,e.clientY-touchStart.y)>10)clearTimeout(el.coverTimer)});el.addEventListener('pointerup',()=>clearTimeout(el.coverTimer));el.addEventListener('pointercancel',()=>{clearTimeout(el.coverTimer);hideCoverPreview(true)});el.addEventListener('click',e=>{if(el.coverHeld){el.coverHeld=false;e.preventDefault();e.stopPropagation()}},true);
+});
+  scaleShelf();requestAnimationFrame(scaleShelf);
+};
+let autoStackSaving=false,autoStackFailure=false;
+async function persistAutomaticStacks(){
+  if(!db||autoStackSaving||autoStackFailure)return;
+  const baseline={...archive,books},normalized=ArchiveModel.autoStack(books);
+  if(normalized.every((b,i)=>b===books[i]))return;
+  autoStackSaving=true;
+  try{await ArchiveDB.patch(db,{...archive,books:normalized},baseline);await reloadArchive();autoStackSaving=false;render()}
+  catch(e){autoStackSaving=false;autoStackFailure=true;serious(e)}
+}
+let coverHideTimer,coverGoneTimer;
+function hideCoverPreview(immediate=false){clearTimeout(coverHideTimer);clearTimeout(coverGoneTimer);const tip=$('#bookPreview');if(immediate===true){tip.classList.remove('visible');tip.hidden=true;return}coverHideTimer=setTimeout(()=>{tip.classList.remove('visible');coverGoneTimer=setTimeout(()=>tip.hidden=true,230)},70)}
+function showCoverPreview(el){
+  clearTimeout(coverHideTimer);clearTimeout(coverGoneTimer);const b=books.find(b=>b.id===el.dataset.id);if(!b)return;
+  const tip=$('#bookPreview'),wasHidden=tip.hidden;tip.dataset.book=b.id;
+  tip.innerHTML=`<img class="hover-cover" src="${coverURLFor(b)}" alt="Cover of ${escapeHTML(b.title)}"><p class="preview-progress">${b.finished?'Finished / 100%':Math.round(clamp(b.readingProgress??b.readerPosition?.progress,0,1,0)*100)+'%'}</p>${b.readerPosition?.chapter?`<p class="preview-chapter">${escapeHTML(b.readerPosition.chapter)}</p>`:''}`;
+  if(wasHidden)tip.classList.remove('visible');tip.hidden=false;el.setAttribute('aria-describedby','bookPreview');
+  const place=()=>{if(tip.hidden||tip.dataset.book!==b.id)return;const rect=el.getBoundingClientRect(),width=tip.offsetWidth,height=tip.offsetHeight;tip.style.left=Math.max(12,Math.min(innerWidth-width-12,rect.left+rect.width/2-width/2))+'px';const above=rect.top-height-14;tip.style.top=Math.max(12,Math.min(innerHeight-height-12,above>=12?above:rect.bottom+12))+'px'};
+  place();const image=tip.querySelector('img');image.addEventListener('load',place,{once:true});image.addEventListener('error',()=>{image.src=fallbackCover(b);place()},{once:true});requestAnimationFrame(()=>{if(!tip.hidden&&tip.dataset.book===b.id)tip.classList.add('visible')});
+}
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('[data-id]'))hideCoverPreview(true)});
+function scaleShelf(){
+  const composition=$('#shelfComposition');if(!composition)return;const shelf=$('#books');composition.style.transform='none';
+  if(view==='list'){composition.style.left='0px';composition.style.width='100%';composition.querySelectorAll('[data-id]').forEach(el=>applySpinesDesign(el,books.find(b=>b.id===el.dataset.id)));shelf.style.height=(composition.scrollHeight+20)+'px';return}composition.style.width='';
+  const width=composition.scrollWidth,height=composition.scrollHeight,availableHeight=document.body.classList.contains('library-route')?Math.max(80,shelf.clientHeight):Math.max(200,innerHeight-(shelf.getBoundingClientRect().top+scrollY)-95),widthFit=Math.max(1,shelf.clientWidth)/Math.max(1,width),heightFit=Math.max(1,availableHeight-20)/Math.max(1,height);
+  // Only Shelf scales the whole arrangement to fit its available area.
+  const scale=Math.min(1.8,widthFit,heightFit);
+  composition.style.transform=`scale(${scale})`;composition.style.left='0px';shelf.style.height=Math.max(availableHeight,height*scale+20)+'px';
+}
+window.addEventListener('resize',()=>{scaleShelf();if(Board.bookId)Board.refresh()});
+function manageBook(id){const b=books.find(b=>b.id===id);$('#bookMenuBody').innerHTML=`<img class="book-menu-cover" src="${coverURLFor(b)}" alt="Book cover"><h2>${escapeHTML(b.title)}</h2><p>${b.finished?'Finished':b.readerPosition?'Reading':'Not started'} · ${Math.round((b.readerPosition?.progress||0)*100)}% · ${escapeHTML(b.readerPosition?.chapter||'No current chapter')}</p><button id="menuOpen">Open Reader</button><button id="menuCustomize">Customize Book</button><label>Move to Library<select id="moveLibrary">${activeLibraries().map(l=>`<option value="${escapeHTML(l.id)}" ${l.id===b.libraryId?'selected':''}>${escapeHTML(l.name)} (${activeBooks(l.id).length}/16)</option>`).join('')}</select></label><button id="menuMove">Move book</button><button id="menuUnstack">Unstack</button><button id="menuTrash">Move to Recently Deleted</button>`;$('#bookMenu').showModal();$('#menuOpen').onclick=()=>{$('#bookMenu').close();openBook(id)};$('#menuCustomize').onclick=()=>{$('#bookMenu').close();openCustomize(id)};$('#menuMove').onclick=async()=>{try{const destination=$('#moveLibrary').value;if(destination!==b.libraryId)await saveArchive(ArchiveModel.move({...archive,books},id,destination));$('#bookMenu').close()}catch(e){serious(e)}};$('#menuUnstack').onclick=async()=>{try{await updateBook(id,b=>({...b,stackId:null,stackOrder:null,stackSchemaVersion:1,stackMode:'separate'}));render();$('#bookMenu').close()}catch(e){serious(e)}};$('#menuTrash').onclick=()=>trashBook(id)}
+async function trashBook(id){if(!confirm('Move this book and its entire workspace to Recently Deleted? You can restore it later.'))return;try{await updateBook(id,b=>({...b,deletedAt:Date.now(),stackId:null}));document.querySelectorAll('dialog[open]').forEach(d=>d.close());backToLibrary();message('Moved to Recently Deleted.')}catch(e){serious(e)}}
+$('#workspaceActionsMenu').onclick=()=>manageBook(activeBookId);
+$('#delete').onclick=()=>trashBook(selected.id);
+// Always enter Reader. Switching views afterward preserves both mounted panels.
+openBook=function(id){$('#bookPreview').hidden=true;const b=books.find(b=>b.id===id&&!b.deletedAt);if(!b)return;activeBookId=id;currentLibraryId=b.libraryId;workspaceTab='reader';Reader.bookId=null;$('#library').hidden=true;$('#workspace').hidden=false;document.body.classList.add('workspace-open');Reader.relinkCardId=null;renderWorkspace();setRoute();$('#workspaceTitle').focus();scrollTo({top:0});};
+renderWorkspace=function(){const b=books.find(b=>b.id===activeBookId);if(!b)return backToLibrary();$('#workspaceTitle').textContent=b.title;$('#workspaceAuthor').textContent=b.author+(b.finished?' · Finished':'');$('#attachEPUB').textContent=b.file?'Replace EPUB':'Attach EPUB';if(Board.bookId!==b.id||!$('#boardCanvas'))Board.open(b);else Board.refresh();Reader.open(b);setWorkspaceTab(workspaceTab)};
+function sizeWorkspace(){if(typeof WorkspaceShell!=='undefined')WorkspaceShell.size()}
+const originalBackToLibrary=backToLibrary;backToLibrary=function(navigate=true){Reader.savePosition?.();Reader.dismiss?.();document.body.classList.remove('workspace-open');originalBackToLibrary(navigate)};
+window.addEventListener('resize',sizeWorkspace);
+let workspaceClientWidth=0;new ResizeObserver(()=>{const width=document.documentElement.clientWidth;if(width!==workspaceClientWidth){workspaceClientWidth=width;sizeWorkspace()}}).observe(document.documentElement);
+$('#splitTab').onclick=()=>setWorkspaceTab('split');
+$('#workspacePanels').insertAdjacentHTML('beforeend','<button id="workspaceDivider" role="separator" aria-label="Resize workspace panels" aria-orientation="vertical" aria-valuemin="35" aria-valuemax="70" aria-valuenow="55"></button>');$('#workspacePanels').insertBefore($('#workspaceDivider'),$('#boardPanel'));
+function splitRatioAt(value){const width=$('#workspacePanels').clientWidth,min=Math.min(45,Math.max(35,300/width*100)),max=Math.max(55,Math.min(70,100-300/width*100));return Math.max(min,Math.min(max,value))}
+function applySplitRatio(value){value=splitRatioAt(value);$('#workspacePanels').style.setProperty('--split',value+'%');$('#workspaceDivider').setAttribute('aria-valuenow',Math.round(value));return value}
+async function saveSplitRatio(value){try{await updateBook(activeBookId,b=>({...b,splitRatio:value}))}catch(e){serious(e)}}
+$('#workspaceDivider').onpointerdown=e=>{if(workspaceTab!=='split')return;e.preventDefault();const divider=e.currentTarget,position=Reader.locationForLayout();Reader.suspendPosition=true;divider.setPointerCapture(e.pointerId);let ratio=books.find(b=>b.id===activeBookId)?.splitRatio||55;divider.onpointermove=e=>{const rect=$('#workspacePanels').getBoundingClientRect();ratio=applySplitRatio((e.clientX-rect.left)/rect.width*100);Board.draw()};divider.onpointerup=divider.onpointercancel=()=>{divider.onpointermove=null;Reader.suspendPosition=false;Reader.layout('split',position);saveSplitRatio(ratio)};};
+$('#workspaceDivider').onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const position=Reader.locationForLayout(),current=parseFloat($('#workspacePanels').style.getPropertyValue('--split'))||55,value=applySplitRatio(e.key==='Home'?35:e.key==='End'?70:current+(e.key==='ArrowRight'?2:-2));Reader.layout('split',position);saveSplitRatio(value)};
+restoreRoute=function(){const match=location.hash.match(/^#book\/([^/]+)(?:\/(reader|split|board|map))?/);if(match){try{const id=decodeURIComponent(match[1]);if(books.some(b=>b.id===id&&!b.deletedAt)){openBook(id);if(match[2]&&match[2]!=='reader')setWorkspaceTab(match[2]);return}}catch{}}backToLibrary(false)};
+importFile=async function(file,targetId=null){try{if(!targetId)ensureCapacity();document.body.classList.add('busy');const attachment=await parseEPUB(file);if(targetId){await updateBook(targetId,b=>{const next=attachToBook(b,attachment);return b.file?ArchiveModel.replaceEPUB(next,{file:attachment.file,cover:attachment.cover,packagePath:attachment.packagePath}):next});Reader.bookId=null;renderWorkspace();message('EPUB saved. Existing designs, notes and cards preserved.')}else{const b={...newBookRecord(attachment.title,attachment.author),...attachment,libraryId:currentLibraryId,order:Date.now()};await persist(b);books.push(b);archive.books=books;render();message('Imported. Customize metadata from the book menu.')}}catch(e){serious(e)}finally{document.body.classList.remove('busy');$('#file').value=''}};
+$('#createForm').onsubmit=async e=>{e.preventDefault();try{ensureCapacity();const f=e.currentTarget,title=f.elements.title.value.trim();if(!title)throw new Error('A title is required.');creationDraft={...newBookRecord(title,f.elements.author.value.trim()),libraryId:currentLibraryId};const file=f.elements.epub.files[0];if(file){const a=await parseEPUB(file);creationDraft=attachToBook(creationDraft,a)}$('#createDialog').close();openCustomize(creationDraft.id)}catch(e){creationDraft=null;serious(e)}};
+const originalOpenCustomize=openCustomize;
+openCustomize=function(id){if(creationDraft?.id===id){selected=creationDraft;const f=$('#editForm');f.elements.title.value=selected.title;f.elements.author.value=selected.author;setAppearanceForm(appearanceOf(selected));$('#detailBody').innerHTML='<h2>Design your new book</h2><p>Nothing is saved until you choose Save.</p>';$('#detail').showModal()}else originalOpenCustomize(id);studioSession++;designDraft=structuredClone(selected.design||{});coverDraft=coverFields(selected);$('#delete').hidden=!!creationDraft;$('#designLibrary').innerHTML=activeLibraries().map(l=>`<option value="${l.id}" ${l.id===selected.libraryId?'selected':''}>${escapeHTML(l.name)} (${activeBooks(l.id).length}/16)</option>`).join('');setupStudio();updatePreview()};
+$('#detail').addEventListener('close',()=>{if(!$('#detail').open){creationDraft=null;designDraft=null;coverDraft=null;studioSession++}});
+$('#editForm').onsubmit=async e=>{e.preventDefault();try{const f=e.currentTarget,title=f.elements.title.value.trim(),destination=$('#designLibrary').value;if(!title)throw new Error('A title is required.');if(creationDraft||destination!==selected.libraryId)ensureCapacity(destination);const appearance=appearanceFromForm(),priorAppearance=appearanceOf(selected),appearanceChanges=Object.fromEntries(Object.entries(appearance).filter(([key,value])=>value!==priorAppearance[key])),changes={title,author:f.elements.author.value.trim()||'Unknown author',...(creationDraft?{appearance}:{}),...(creationDraft||Object.hasOwn(appearanceChanges,'color')?{color:f.elements.color.value}:{}),...(creationDraft||Object.hasOwn(appearanceChanges,'typography')?{type:f.elements.type.value}:{}),design:structuredClone(designDraft||{}),...coverDraft,libraryId:destination};if(creationDraft){const b={...creationDraft,...changes};await persist(b);books.push(b)}else await updateBook(selected.id,b=>({...b,...changes,...(Object.keys(appearanceChanges).length?{appearance:{...b.appearance,...appearanceChanges}}:{}),stackId:destination!==b.libraryId?null:b.stackId,appearanceDefaults:b.appearanceDefaults||defaultAppearance(b)}));$('#detail').close();archive.books=books;currentLibraryId=destination;render();if(activeBookId)renderWorkspace();message('Design saved.')}catch(e){serious(e)}};
+// One stable draft per editor session. Assets are never re-created on slider changes.
+let coverDraft=null,studioSession=0;
+function coverFields(book){return {userCover:book.userCover??null,coverImage:book.coverImage??null,customCover:book.customCover??null,coverSource:book.coverSource||'auto'}}
+function chosenCover(book){
+  if(book.coverSource==='epub')return book.cover instanceof Blob?book.cover:null;
+  return [book.userCover,book.coverImage,book.customCover,book.cover].find(value=>value instanceof Blob)||null;
+}
+const fallbackCovers=new Map();
+function fallbackCover(book){
+  const key=JSON.stringify([book.title,book.author]);if(fallbackCovers.has(key))return fallbackCovers.get(key);
+  const canvas=document.createElement('canvas');canvas.width=300;canvas.height=450;const ctx=canvas.getContext('2d');ctx.fillStyle='#e3e0d2';ctx.fillRect(0,0,300,450);ctx.fillStyle='#111';ctx.font='27px Georgia';
+  let line='',y=60;for(const word of String(book.title||'Untitled').split(/\s+/)){const candidate=(line+' '+word).trim();if(ctx.measureText(candidate).width>246&&line){ctx.fillText(line,27,y,246);y+=34;line=word;if(y>320)break}else line=candidate}ctx.fillText(line,27,y,246);ctx.font='15px Georgia';ctx.fillText(book.author||'',27,410,246);
+  const url=canvas.toDataURL('image/png');fallbackCovers.set(key,url);return url;
+}
+function coverURLFor(book){const cover=chosenCover(book);return cover?assetURL(cover):fallbackCover(book)}
+function setupStudio(){
+  if(!$('#studioControls'))$('.appearance-settings').insertAdjacentHTML('beforeend',`
+    <div id="studioControls">
+      <fieldset id="spineBackground"><legend>Spine Background</legend>
+        <label>Background Mode<select id="artMode"><option value="color">Color Only</option><option value="image">Image Only</option><option value="both">Image + Text</option></select></label>
+        <label>Upload / Replace Spine Artwork<input id="spineArt" type="file" accept="image/png,image/jpeg,image/webp"></label>
+        <p id="artStatus" class="helper" role="status"></p><button type="button" id="removeSpineArt">Remove Artwork</button>
+        <label>Image Fit<select id="artFit"><option value="cover">Cover</option><option value="contain">Contain</option></select></label>
+        <label>Zoom<input id="artZoom" type="range" min=".5" max="3" step=".05"></label>
+        <label>Position X<input id="artX" type="range" min="0" max="100"></label>
+        <label>Position Y<input id="artY" type="range" min="0" max="100"></label>
+        <button type="button" id="resetImageAdjustments">Reset Image Adjustments</button>
+      </fieldset>
+      <fieldset id="coverControls"><legend>Book Cover</legend><img id="coverEditorPreview" alt="Current book cover"><p class="helper">For previews and book information. Independent from spine artwork.</p>
+        <label>Upload / Replace Custom Cover<input id="customCoverFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
+        <p id="coverStatus" class="helper" role="status"></p><div class="asset-actions"><button type="button" id="useEPUBCover">Revert to EPUB Cover</button><button type="button" id="useCustomCover">Use Saved Custom Cover</button><button type="button" id="removeCustomCover">Remove Custom Cover</button></div>
+      </fieldset>
+      <fieldset id="typeDesign"><legend>Spine Typography</legend><label>Text Color<input id="spineTextColor" type="color"></label><div id="textDesignControls"></div></fieldset>
+    </div>`);
+  // Move the existing named input, retaining compatibility with the original form model.
+  const colorLabel=$('#editForm [name=color]').closest('label');$('#spineBackground').insertBefore(colorLabel,$('#spineArt').closest('label'));
+  const d=designDraft;d.textColor=d.textColor||d.title?.color||d.author?.color||ink(appearanceFromForm().color);
+  setArtworkInputs();$('#spineArt').value='';$('#customCoverFile').value='';$('#spineTextColor').value=d.textColor;
+  $('#textDesignControls').innerHTML=['title','author'].map(key=>{
+    const t=d[key]||{},horizontal=appearanceFromForm().orientation==='horizontal';
+    return `<fieldset><legend>${key==='title'?'Title':'Author'}</legend><label class="checkbox-label"><input type="checkbox" data-text="${key}" data-prop="show" ${t.show===false?'':'checked'}> Show ${key}</label>
+      <label>Font<select data-text="${key}" data-prop="font"><option value="">Default</option><option value="Georgia">Georgia</option><option value="Arial">Arial</option><option value="Helvetica">Helvetica</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Courier New</option>${archive.fonts.map(f=>`<option value="font-${f.id}">${escapeHTML(f.name)}</option>`).join('')}</select></label>
+      ${[['size',10,80,t.size??22],['weight',100,900,t.weight??500],['spacing',-2,12,t.spacing??0],['rotation',-180,180,t.rotation??(horizontal?0:key==='title'?-90:90)],['x',0,100,t.x??(key==='title'?40:80)],['y',0,100,t.y??50]].map(([prop,min,max,value])=>`<label>${({size:'Size',weight:'Weight',spacing:'Letter Spacing',rotation:'Rotation',x:'Position X',y:'Position Y'})[prop]}<input type="number" min="${min}" max="${max}" value="${value}" data-text="${key}" data-prop="${prop}"></label>`).join('')}</fieldset>`;
+  }).join('');
+  for(const input of $('#textDesignControls').querySelectorAll('select'))input.value=d[input.dataset.text]?.font||'';
+  const readDraft=e=>{
+    if(e.target.type==='file'||!designDraft)return;
+    Object.assign(designDraft,{mode:$('#artMode').value,fit:$('#artFit').value,zoom:+$('#artZoom').value,x:+$('#artX').value,y:+$('#artY').value,textColor:$('#spineTextColor').value});
+    for(const input of $('#textDesignControls').querySelectorAll('[data-text]')){
+      if(!e.target.dataset.text||input.dataset.text!==e.target.dataset.text)continue;
+      const key=input.dataset.text,prop=input.dataset.prop;if(!designDraft[key])designDraft[key]={};
+      if(input.type==='number'&&!Number.isFinite(input.valueAsNumber))continue;
+      designDraft[key][prop]=input.type==='checkbox'?input.checked:input.type==='number'?input.valueAsNumber:input.value;
+    }
+    updateArtworkStatus();
+  };
+  $('#studioControls').oninput=readDraft;$('#studioControls').onchange=readDraft;
+  $('#spineArt').onchange=async e=>{
+    const file=e.target.files[0],draft=designDraft,session=studioSession;if(!file)return;
+    try{await validateImage(file);if(draft!==designDraft||session!==studioSession)return;draft.artwork=file;draft.mode='both';setArtworkInputs();updateArtworkStatus();updatePreview()}catch(error){if(session===studioSession)serious(error)}
+  };
+  $('#removeSpineArt').onclick=()=>{designDraft.artwork=null;$('#spineArt').value='';updateArtworkStatus();updatePreview()};
+  $('#resetImageAdjustments').onclick=()=>{Object.assign(designDraft,{fit:'cover',zoom:1,x:50,y:50});setArtworkInputs();updatePreview()};
+  $('#customCoverFile').onchange=async e=>{
+    const file=e.target.files[0],draft=coverDraft,session=studioSession;if(!file)return;
+    try{await validateImage(file);if(draft!==coverDraft||session!==studioSession)return;draft.userCover=file;draft.coverSource='custom';updateCoverEditor()}catch(error){if(session===studioSession)serious(error)}
+  };
+  $('#useEPUBCover').onclick=()=>{coverDraft.coverSource='epub';updateCoverEditor()};
+  $('#useCustomCover').onclick=()=>{coverDraft.coverSource='custom';updateCoverEditor()};
+  $('#removeCustomCover').onclick=()=>{Object.assign(coverDraft,{userCover:null,coverImage:null,customCover:null,coverSource:'auto'});$('#customCoverFile').value='';updateCoverEditor()};
+  updateArtworkStatus();updateCoverEditor();
+}
+function setArtworkInputs(){const d=designDraft;$('#artMode').value=d.mode||'color';$('#artFit').value=d.fit||'cover';$('#artZoom').value=d.zoom??1;$('#artX').value=d.x??50;$('#artY').value=d.y??50}
+function updateArtworkStatus(){const d=designDraft;$('#removeSpineArt').disabled=!(d.artwork instanceof Blob);$('#artStatus').textContent=d.artwork instanceof Blob?(d.mode==='color'?'Artwork retained; hidden in Color Only.':d.artwork.name||'Saved spine artwork'):(d.mode==='image'||d.mode==='both'?'No spine artwork yet. Upload an image, or choose Color Only.':'No spine artwork uploaded.')}
+function updateCoverEditor(){if(!coverDraft||!$('#coverEditorPreview'))return;const draft={...selected,...coverDraft};$('#coverEditorPreview').src=coverURLFor(draft);$('#coverEditorPreview').onerror=()=>{$('#coverEditorPreview').onerror=null;$('#coverEditorPreview').src=fallbackCover(draft);$('#coverStatus').textContent='Saved cover could not be displayed; using metadata fallback.'};const custom=[coverDraft.userCover,coverDraft.coverImage,coverDraft.customCover].some(x=>x instanceof Blob);$('#removeCustomCover').disabled=!custom;$('#useCustomCover').disabled=!custom;$('#useEPUBCover').disabled=!(selected.cover instanceof Blob);$('#coverStatus').textContent=coverDraft.coverSource==='epub'?(selected.cover instanceof Blob?'Using EPUB cover. Saved custom cover is retained.':'No EPUB cover; using metadata fallback. Saved custom cover is retained.'):custom?'Using custom cover.':selected.cover?'Using EPUB cover.':'Using generated metadata cover.'}
+const legacyPreview=updatePreview;
+updatePreview=function(){SpineArtwork.release($('#appearancePreview'));legacyPreview();if(!selected)return;const preview=$('#appearancePreview .book');if(preview)applyDesign(preview,{...selected,design:designDraft||selected.design});};
+// app.js registered the old function by reference. Replace those callbacks too.
+$('#editForm').removeEventListener('input',legacyPreview);$('#editForm').removeEventListener('change',legacyPreview);$('#editForm').addEventListener('input',updatePreview);$('#editForm').addEventListener('change',updatePreview);
+function applyDesign(el,book){
+  for(const key of ['title','author']){const node=el.querySelector('.spine-'+key);if(node)node.style.fontFamily=VisualModel.bookFont(book,key)}
+  const d=book.design;if(!d)return;
+  // One rendering path for preview and shelf: fit, zoom and positioning are independent.
+  el.style.backgroundImage='';SpineArtwork.clear(el);el.querySelector('.art-empty')?.remove();
+  if(d.mode!=='color'&&d.artwork instanceof Blob){
+    SpineArtwork.apply(el,{fit:d.fit,x:clamp(d.x,0,100,50),y:clamp(d.y,0,100,50),zoom:clamp(d.zoom,.5,3,1)},assetURL(d.artwork));
+  }else if(d.mode==='image'&&el.closest('#appearancePreview')){const empty=document.createElement('span');empty.className='art-empty';empty.textContent='No spine artwork';el.prepend(empty)}
+  const shared=/^#[0-9a-f]{6}$/i.test(d.textColor)?d.textColor:null;
+  for(const key of ['title','author']){
+    const node=el.querySelector('.spine-'+key),t=d[key];if(!node)continue;
+    node.style.display=d.mode==='image'||t?.show===false?'none':t?'block':'';
+    if(shared)node.style.color=shared;
+    if(!t)continue;
+    Object.assign(node.style,{position:'absolute',writingMode:'horizontal-tb',left:clamp(t.x,0,100,50)+'%',top:clamp(t.y,0,100,50)+'%',bottom:'auto',right:'auto',transform:`translate(-50%,-50%) rotate(${clamp(t.rotation,-180,180,0)}deg)`,fontFamily:VisualModel.bookFont(book,key),fontSize:clamp(t.size,10,80,22)+'px',fontWeight:clamp(t.weight,100,900,500),letterSpacing:clamp(t.spacing,-2,12,0)+'px',color:shared||(/^#[0-9a-f]{6}$/i.test(t.color)?t.color:ink(appearanceOf(book).color)),maxHeight:'none',maxWidth:'none',whiteSpace:'nowrap'});
+  }
+  const number=el.querySelector('.spine-number');if(number){number.style.display=d.mode==='image'?'none':'';if(shared)number.style.color=shared}
+  if(el.closest('#appearancePreview'))for(const key of ['title','author']){
+    const node=el.querySelector('.spine-'+key);if(!node||!designDraft?.[key])continue;node.style.cursor='move';
+    node.onpointerdown=e=>{e.preventDefault();node.setPointerCapture(e.pointerId);const rect=el.getBoundingClientRect(),start={...designDraft[key]},x=e.clientX,y=e.clientY;
+      node.onpointermove=e=>{designDraft[key]={...start,x:clamp((start.x??50)+(e.clientX-x)/rect.width*100,0,100,50),y:clamp((start.y??50)+(e.clientY-y)/rect.height*100,0,100,50)};node.style.left=designDraft[key].x+'%';node.style.top=designDraft[key].y+'%'};
+      node.onpointerup=()=>{node.onpointermove=null;setupStudio();updatePreview()};
+    };
+  }
+}
+
+function applySpinesDesign(el,book){
+  applyDesign(el,book);
+  // Typography keeps its styling; the long horizontal presentation reflows text.
+  // Artwork continues through the shared fit/zoom/position renderer above.
+  const slot=el.parentElement,d=book.design||{};
+  let height=Math.max(72,24+appearanceOf(book).thickness*1.25);
+  for(const key of ['title','author']){
+    const node=el.querySelector('.spine-'+key),t=d[key];
+    if(!node||node.style.display==='none')continue;
+    const size=Math.max(key==='title'?20:14,clamp(t?.size,10,80,key==='title'?24:14));
+    Object.assign(node.style,{position:'relative',writingMode:'horizontal-tb',left:'auto',top:'auto',right:'auto',bottom:'auto',transform:'none',fontSize:size+'px',maxWidth:'100%',whiteSpace:'normal',overflowWrap:'anywhere',flex:'none',margin:'0',lineHeight:'1.2'});
+    height=Math.max(height,28+Array.from(el.querySelectorAll('.spine-title,.spine-author')).filter(n=>n.style.display!=='none').reduce((n,t)=>n+t.scrollHeight,0));
+  }
+  el.style.setProperty('--height',height+'px');slot.style.height=height+'px';
+}
+
+const composeRender=render;render=function(){composeRender();$('#books').querySelectorAll('[data-id]').forEach(el=>{const b=books.find(b=>b.id===el.dataset.id);if(view!=='list')applyDesign(el,b)});scaleShelf();if(typeof WorkspaceNavigation!=='undefined')WorkspaceNavigation.sync();};
+const legacyReset=$('#resetAppearance').onclick;$('#resetAppearance').onclick=()=>{legacyReset();Object.assign(designDraft,{fit:'cover',zoom:1,x:50,y:50,title:undefined,author:undefined,textColor:ink(appearanceFromForm().color)});setupStudio();updatePreview()};
+const loadedFonts=new Map();
+async function loadFonts(){for(const font of archive.fonts){if(loadedFonts.has(font.id))continue;try{const face=new FontFace('font-'+font.id,await font.file.arrayBuffer());await face.load();document.fonts.add(face);loadedFonts.set(font.id,face)}catch{message('A stored font could not be loaded: '+font.name,true)}}Reader.refreshFonts();}
+async function encodeArchive(data,metadata={}){const zip=new JSZip();let count=0;async function encode(value){if(value instanceof Blob){const path='assets/'+(++count);zip.file(path,await value.arrayBuffer());return {$asset:path,type:value.type,name:value.name||null}}if(Array.isArray(value))return Promise.all(value.map(encode));if(value&&typeof value==='object'){const result={};for(const [key,item] of Object.entries(value))result[key]=await encode(item);return result}return value}
+  zip.file('archive.json',JSON.stringify({version:2,...metadata,data:await encode(data)},null,2));return zip.generateAsync({type:'blob',compression:'DEFLATE'});
+}
+function downloadArchive(blob,name){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),30000)}
+async function exportArchive(){try{const latest=await ArchiveDB.read(db);downloadArchive(await encodeArchive(latest),'archive-of-me-backup.zip');await setting('lastBackup',Date.now());message('Complete archive backup exported.')}catch(e){serious(e)}}
+async function decodeBackup(file,withManifest=false){if(file.size>250*1024*1024)throw new Error('Backup exceeds the 250 MB prototype import limit.');const zip=await JSZip.loadAsync(file);if(Object.keys(zip.files).length>20000)throw new Error('Too many backup entries.');const manifest=zip.file('archive.json');if(!manifest)throw new Error('This is not a complete Archive of Me version-2 backup. Older library-only ZIPs can supply EPUBs by re-importing them.');const raw=await manifest.async('string');if(raw.length>20*1024*1024)throw new Error('Backup metadata is too large.');const parsed=JSON.parse(raw);if(parsed.version!==2)throw new Error('Unsupported backup version.');let total=0;
+  async function decode(value){if(value&&typeof value==='object'&&value.$asset){if(!/^assets\/\d+$/.test(value.$asset)||!zip.file(value.$asset))throw new Error('Missing backup asset.');const bytes=await zip.file(value.$asset).async('uint8array');total+=bytes.length;if(total>500*1024*1024)throw new Error('Uncompressed backup exceeds 500 MB.');return value.name?new File([bytes],String(value.name),{type:value.type||''}):new Blob([bytes],{type:value.type||''})}if(Array.isArray(value))return Promise.all(value.map(decode));if(value&&typeof value==='object'){const out={};for(const [k,v] of Object.entries(value)){if(['__proto__','constructor','prototype'].includes(k))throw new Error('Invalid backup key.');out[k]=await decode(v)}return out}return value}
+  const data=ArchiveModel.validate(await decode(parsed.data));for(const b of data.books){if(b.file)await parseEPUB(b.file);if(b.design?.artwork)await validateImage(b.design.artwork);for(const c of b.board?.cards||[]){if(c.image)await BoardImages.validate(c.image);if(c.imageAssetId&&!b.board.assets?.[c.imageAssetId]?.file)throw new Error('Missing Story Board image asset.')}for(const asset of Object.values(b.board?.assets||{}))await BoardImages.validate(asset.file)}for(const f of data.fonts){if(!(f.file instanceof Blob))throw new Error('Missing font file.');await new FontFace('validate-'+f.id,await f.file.arrayBuffer()).load()}return withManifest?{data,kind:parsed.kind,seed:parsed.seed}:data;
+}
+async function restoreArchive(file,mode){try{const incoming=await decodeBackup(file);let next;if(mode==='replace'){if(!confirm('Replace the ENTIRE local archive with this validated backup? Export your current archive first. This replaces all Libraries, books, fonts and settings.'))return;next=incoming}else{next={};let conflicts=0;for(const store of ArchiveDB.stores)conflicts+=incoming[store].filter(x=>archive[store].some(y=>y.id===x.id)).length;let replace=false;if(conflicts){const choice=prompt(conflicts+' matching IDs found. Type KEEP to preserve current versions, or INCOMING to replace matching IDs. Cancel aborts restore.','KEEP');if(choice===null)return;if(!['KEEP','INCOMING'].includes(choice.trim().toUpperCase()))throw new Error('Restore canceled: choose KEEP or INCOMING explicitly.');replace=choice.trim().toUpperCase()==='INCOMING';}for(const store of ArchiveDB.stores){const map=new Map(archive[store].map(x=>[x.id,x]));for(const record of incoming[store])if(!map.has(record.id)||replace)map.set(record.id,record);next[store]=[...map.values()]}ArchiveModel.validate(next)}await saveArchive(next,mode==='replace');Reader.bookId=null;Board.bookId=null;for(const face of loadedFonts.values())document.fonts.delete(face);loadedFonts.clear();await loadFonts();backToLibrary();$('#settingsDialog').close();message('Archive restored atomically.')}catch(e){serious(e)}}
+function openSettings(section='application'){
+  const active=activeLibraries(),archived=archive.libraries.filter(l=>l.archived),trash=books.filter(b=>b.deletedAt);
+  $('#settingsBody').innerHTML=`<h2>Settings</h2><p>Browser-local archive · export before changing devices or clearing data.</p><section><h3>Libraries</h3><div id="libraryManagement">${[...active,...archived].map(l=>`<div class="library-management" data-manage-library="${l.id}"><label>Name<input data-lib-name value="${escapeHTML(l.name)}"></label><label>Shelf line<input type="color" data-lib-line value="${l.line}"></label><button data-lib-save>Save</button><button data-lib-up>↑</button><button data-lib-down>↓</button><button data-lib-archive>${l.archived?'Restore Library':'Archive Library'}</button><span>${activeBooks(l.id).length}/16${l.archived?' · Archived':''}</span></div>`).join('')}</div></section><section><h3>Shared Font Library</h3><label>Import font (TTF, OTF, WOFF, WOFF2)<input id="fontUpload" type="file" accept=".ttf,.otf,.woff,.woff2"></label><ul>${archive.fonts.map(f=>`<li>${escapeHTML(f.name)} <button data-delete-font="${f.id}">Delete font</button></li>`).join('')||'<li>No custom fonts yet.</li>'}</ul></section><section><h3>Storage & backup</h3><p id="storageOverview">Calculating…</p><button id="settingsExport">Export complete ZIP</button><label>Restore mode<select id="restoreMode"><option value="merge">Merge (preserve current archive)</option><option value="replace">Replace entire archive</option></select></label><label>Restore backup ZIP<input id="restoreFile" type="file" accept=".zip"></label><label>Remind me to back up<select id="backupReminder"><option value="7">Every 7 days</option><option value="14">Every 14 days</option><option value="30">Every 30 days</option><option value="0">Off</option></select></label><p>Last backup: ${getSetting('lastBackup',null)?new Date(getSetting('lastBackup')).toLocaleString():'Never'}</p></section><section><h3>Recently Deleted</h3><p>Kept indefinitely until you explicitly delete permanently.</p>${trash.map(b=>`<div class="trash-book"><strong>${escapeHTML(b.title)}</strong><select data-restore-target="${b.id}" aria-label="Restore destination"><option value="">Choose active Library</option>${active.map(l=>`<option value="${l.id}" ${l.id===b.libraryId?'selected':''}>${escapeHTML(l.name)} (${activeBooks(l.id).length}/16)</option>`).join('')}</select><button data-restore-book="${b.id}">Restore</button><button data-purge-book="${b.id}">Delete permanently</button></div>`).join('')||'<p>Nothing in Recently Deleted.</p>'}</section>`;
+  if(section==='libraries')$('#settingsBody h2').textContent='Library settings';$('#settingsBody').querySelectorAll('section').forEach((el,i)=>el.hidden=section==='libraries'?i!==0:i===0);$('#settingsDialog').showModal();$('#backupReminder').value=getSetting('backupReminder',14);$('#backupReminder').onchange=async e=>{try{await setting('backupReminder',+e.target.value);message('Reminder preference saved.')}catch(e){serious(e)}};
+  navigator.storage?.estimate().then(est=>{if($('#storageOverview'))$('#storageOverview').textContent=`${(est.usage/1024/1024).toFixed(1)} MB used · ${(est.quota/1024/1024).toFixed(0)} MB available quota · ${books.length} books, ${archive.fonts.length} fonts`});
+  $('#settingsExport').onclick=exportArchive;$('#restoreFile').onchange=e=>{if(e.target.files[0])restoreArchive(e.target.files[0],$('#restoreMode').value)};
+  $('#settingsBody').querySelectorAll('[data-delete-font]').forEach(button=>button.onclick=async()=>{const id=button.dataset.deleteFont,key='font-'+id,uiUsed=getSetting('applicationAppearance',{}).font===key,used=books.filter(b=>b.readerSettings?.font===key||b.design?.title?.font===key||b.design?.author?.font===key);if(!confirm(uiUsed?'This font is used by the interface. Delete it and use the Application Default?':used.length?`This font is used by ${used.length} book(s). Delete it and safely switch reading to Georgia and spine text to its default font?`:'Delete this font from the shared library?'))return;try{const nextBooks=books.map(b=>({...b,...(b.readerSettings?.font===key?{readerSettings:{...b.readerSettings,font:'Georgia'}}:{}),...(b.design?{design:{...b.design,...(b.design.title?.font===key?{title:{...b.design.title,font:''}}:{}),...(b.design.author?.font===key?{author:{...b.design.author,font:''}}:{})}}:{})}));await saveArchive({...archive,books:nextBooks,fonts:archive.fonts.filter(f=>f.id!==id),settings:archive.settings.map(s=>s.id==='applicationAppearance'&&s.value?.font===key?{...s,value:{...s.value,font:'default'}}:s)});const face=loadedFonts.get(id);if(face)document.fonts.delete(face);loadedFonts.delete(id);Appearance.apply();Reader.refreshFonts();Reader.style();$('#settingsDialog').close();openSettings();message('Font removed; saved designs and reading settings use safe fallbacks.')}catch(e){serious(e)}});
+  $('#fontUpload').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{await importSharedFont(file);$('#settingsDialog').close();openSettings();message('Font imported.')}catch(e){serious(e)}};
+  $('#libraryManagement').onclick=async e=>{const row=e.target.closest('[data-manage-library]');if(!row)return;const id=row.dataset.manageLibrary;try{let libraries=structuredClone(archive.libraries),l=libraries.find(l=>l.id===id);if(e.target.closest('[data-lib-save]')){const name=row.querySelector('[data-lib-name]').value.trim();if(!name)throw new Error('Library name is required.');l.name=name;l.line=row.querySelector('[data-lib-line]').value}else if(e.target.closest('[data-lib-archive]'))l.archived=!l.archived;else if(e.target.closest('[data-lib-up],[data-lib-down]')){const sorted=libraries.sort((a,b)=>a.order-b.order),i=sorted.findIndex(l=>l.id===id),to=Math.min(sorted.length-1,Math.max(0,i+(e.target.closest('[data-lib-up]')?-1:1)));sorted.splice(to,0,sorted.splice(i,1)[0]);sorted.forEach((l,i)=>l.order=i)}else return;await saveArchive({...archive,books,libraries});$('#settingsDialog').close();openSettings(section)}catch(e){serious(e)}};
+  $('#settingsBody').querySelectorAll('[data-restore-book]').forEach(el=>el.onclick=async()=>{try{const id=el.dataset.restoreBook,destination=$('#settingsBody').querySelector(`[data-restore-target="${CSS.escape(id)}"]`).value;ensureCapacity(destination);await updateBook(id,b=>({...b,deletedAt:null,libraryId:destination,order:Date.now()}));render();$('#settingsDialog').close();openSettings()}catch(e){serious(e)}});
+  $('#settingsBody').querySelectorAll('[data-purge-book]').forEach(el=>el.onclick=async()=>{if(!confirm('PERMANENTLY DELETE this book, EPUB, annotations, artwork and Story Board? This cannot be undone.'))return;try{await transaction('readwrite',store=>store.delete(el.dataset.purgeBook));books=books.filter(b=>b.id!==el.dataset.purgeBook);archive.books=books;$('#settingsDialog').close();openSettings();message('Permanently deleted.')}catch(e){serious(e)}});
+}
+$('#aboutNav').onclick=()=>openSettings();$('#backup').onclick=exportArchive;
+// Accessible per-book management without relying on context menus.
+$('#books').addEventListener('keydown',e=>{const el=e.target.closest('[data-id]');if(el&&(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10'))){e.preventDefault();manageBook(el.dataset.id)}});
+async function initializeArchive(){try{
+  document.body.classList.add('busy');db=await ArchiveDB.open();await reloadArchive();
+  if(!getSetting('initialized',false)){
+    // Public first-run setup: add the validated collection only to a genuinely empty database.
+    // Existing or migrated user data is never replaced or supplemented automatically.
+    const fresh=!archive.books.length&&!archive.libraries.length&&!archive.fonts.length&&!archive.settings.length;
+    if(fresh){
+      const response=await fetch('sample-content/archive-of-me-final-six-book-library-seed.zip');
+      if(!response.ok)throw new Error('The Sample Library seed is unavailable. Reload when the public assets are available.');
+      const seedFile=new File([await response.blob()],'archive-of-me-final-six-book-library-seed.zip',{type:'application/zip'});
+      const imported=await SampleLibrary.importPackage(seedFile);
+      if(!imported.installed)throw new Error('The Sample Library could not be installed in this new browser profile.');
+    }
+    await setting('initialized',true);
+  }
+  view=getSetting('libraryView','shelf')==='list'?'list':'shelf';currentLibraryId=getSetting('activeLibrary',null)||activeLibraries()[0]?.id||null;render();restoreRoute();if(!getSetting('reminderSince',0))await setting('reminderSince',Date.now());const days=getSetting('backupReminder',14);if(days&&(Date.now()-getSetting('lastBackup',getSetting('reminderSince')))>days*86400000)message('Time to back up your archive. Open Settings → Export complete ZIP.',true);
+}catch(e){serious(e);document.body.classList.add('storage-failed')}finally{document.body.classList.remove('busy')}}
+initializeArchive();
+
+$('#bookActionMenu').addEventListener('click',e=>{if(e.target.closest('.create-book,.import'))$('#bookActionMenu').open=false});
