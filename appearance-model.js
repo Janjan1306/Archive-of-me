@@ -1,6 +1,6 @@
 /* Global UI preferences, deliberately independent of book and Reader appearance. */
 (function(root){const A={
- defaults:{theme:'black',custom:{background:'#171b21',text:'#f4f0e8',accent:'#b6dcbf'},font:'default'},
+ defaults:{theme:'white',custom:{background:'#171b21',text:'#f4f0e8',accent:'#b6dcbf'},font:'default'},
  fonts:{default:'"DM Sans",Arial,"Noto Sans",sans-serif',Arial:'Arial,"Helvetica Neue",sans-serif',Helvetica:'Helvetica,"Helvetica Neue",Arial,sans-serif',Georgia:'Georgia,"Times New Roman",serif','Times New Roman':'"Times New Roman",Georgia,serif','Courier New':'"Courier New",Courier,monospace'},
  presets:{black:{background:'#0a0a0a',text:'#f5f5f5',accent:'#f2ef24'},white:{background:'#ffffff',text:'#171717',accent:'#777777'},paper:{background:'#f0e9db',text:'#171717',accent:'#171717'}},
  hex(v){return typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v)},

@@ -262,7 +262,7 @@ async function initializeArchive(){try{
     // Existing or migrated user data is never replaced or supplemented automatically.
     const fresh=!archive.books.length&&!archive.libraries.length&&!archive.fonts.length&&!archive.settings.length;
     if(fresh){
-      const response=await fetch('sample-content/archive-of-me-final-six-book-library-seed.zip');
+      const response=await fetch('sample-content/archive-of-me-final-11-book-library-seed.zip');
       if(!response.ok)throw new Error('The Sample Library seed is unavailable. Reload when the public assets are available.');
       const seedFile=new File([await response.blob()],'archive-of-me-final-six-book-library-seed.zip',{type:'application/zip'});
       const imported=await SampleLibrary.importPackage(seedFile);
