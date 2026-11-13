@@ -9,3 +9,5 @@
 #workspacePanels.split #worldPanel{height:100%;min-height:0}
 .split .board-tools input{width:100px;min-width:80px;flex:1}.split .board-tools select{width:100px}.split .board-tools{gap:4px;flex-wrap:wrap}
 .split #worldInspector{width:280px;max-width:calc(100% - 16px)}
+
+.board-zoom-details{position:relative;font-size:11px}.board-zoom-details summary{cursor:pointer;padding:6px;border:1px solid #45525d;min-height:30px}.board-zoom-details p{position:absolute;bottom:32px;left:0;width:250px;max-width:70vw;padding:12px;margin:0;background:#181d23;border:1px solid #586575;color:#c5ced7;line-height:1.5;z-index:8}

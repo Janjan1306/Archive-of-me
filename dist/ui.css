@@ -35,12 +35,12 @@ body.workspace-open>footer{display:none}#workspace{padding-top:8px;padding-botto
 #books[data-view=spines] .spine-symbol{display:none}
 
 /* Working modes reserve more height for the spatial viewport; Reader chrome is unchanged. */
-body.workspace-open:has(#workspacePanels:is([data-mode=split],[data-mode=board],[data-mode=map])) header{height:72px;min-height:72px}
-body.workspace-open:has(#workspacePanels:is([data-mode=split],[data-mode=board],[data-mode=map])) .workspace-top{padding-bottom:2px}
-body.workspace-open:has(#workspacePanels:is([data-mode=split],[data-mode=board],[data-mode=map])) .workspace-top button{min-height:30px;padding-block:4px}
-body.workspace-open:has(#workspacePanels:is([data-mode=split],[data-mode=board],[data-mode=map])) .workspace-heading{padding-bottom:4px}
-body.workspace-open:has(#workspacePanels:is([data-mode=split],[data-mode=board],[data-mode=map])) .workspace-heading h1{font-size:22px}
-body.workspace-open:has(#workspacePanels:is([data-mode=split],[data-mode=board],[data-mode=map])) .workspace-heading p{margin:2px 0 4px}
-body.workspace-open:has(#workspacePanels:is([data-mode=split],[data-mode=board],[data-mode=map])) .workspace-actions button{min-height:32px;padding-block:5px}
-body.workspace-open:has(#workspacePanels:is([data-mode=split],[data-mode=board],[data-mode=map])) .workspace-tabs button{min-height:34px;padding-block:7px}
+body.workspace-open header{height:72px;min-height:72px}
+body.workspace-open .workspace-top{padding-bottom:2px}
+body.workspace-open .workspace-top button{min-height:30px;padding-block:4px}
+body.workspace-open .workspace-heading{padding-bottom:4px}
+body.workspace-open .workspace-heading h1{font-size:22px}
+body.workspace-open .workspace-heading p{margin:2px 0 4px}
+body.workspace-open .workspace-actions button{min-height:32px;padding-block:5px}
+body.workspace-open .workspace-tabs button{min-height:34px;padding-block:7px}
 .board-edit-menu{position:relative}.board-edit-menu>summary{list-style:none;cursor:pointer;border:1px solid #444;padding:6px 10px;font-size:13px;min-height:32px}.board-edit-menu>summary::-webkit-details-marker{display:none}.board-edit-popover{position:absolute;left:0;top:38px;z-index:8;width:310px;display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:12px;background:#171b20;border:1px solid #46505b}.board-edit-popover select{width:100%!important}.board-edit-popover button{text-align:left}.minimap-viewport{fill:#ffffff08;stroke:#e5e9ef;stroke-width:2;vector-effect:non-scaling-stroke}

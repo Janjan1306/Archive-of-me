@@ -5,7 +5,8 @@ const Immersive={active:false,
   enter(){if(this.active||!this.supported())return;WorkspaceShell.reflow(()=>{this.active=true;document.body.classList.add('workspace-immersive');$('#immersiveBar').hidden=false;this.sync()});$('#exitWorkspace').focus({preventScroll:true})},
   exit({focus=true}={}){if(!this.active)return;WorkspaceShell.reflow(()=>{this.active=false;document.body.classList.remove('workspace-immersive','immersive-reader');$('#immersiveBar').hidden=true;this.sync()});if(focus)$('#expandWorkspace').focus({preventScroll:true})},
   escape(e){if(!this.active||e.key!=='Escape'||e.defaultPrevented||e.isComposing||document.querySelector('dialog[open]'))return;
-    if(e.target.tagName==='SELECT'){e.target.blur();$('#exitWorkspace').focus({preventScroll:true})}
+    if($('#quickCharacter')&&!$('#quickCharacter').hidden)$('#quickCharacter').hidden=true;
+    else if(e.target.tagName==='SELECT'){e.target.blur();$('#exitWorkspace').focus({preventScroll:true})}
     else if($('details[open]'))$('details[open]').open=false;
     else if($('#selectionTools')&&!$('#selectionTools').hidden)Reader.dismiss();
     else if($('#readerOptions')&&!$('#readerOptions').hidden){$('#readerOptions').hidden=true;$('#readerSettingsToggle').setAttribute('aria-expanded','false')}
