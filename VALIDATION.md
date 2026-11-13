@@ -351,3 +351,76 @@ Screenshots were saved and visually inspected under `/Users/janjan/Documents/Cha
 ### Remaining prototype limitations
 
 Network uses deterministic static relaxation; very large or dense graphs may still need label-collision/performance tuning. Contradictory family relationships form finite groups rather than inventing a definitive genealogy. Hierarchy rank import is explicit, not continuous organization synchronization. Unknown legacy tree formats are preserved but require a later explicit migration before editing those tree collections. Fullscreen presentation itself is temporary across refresh; tree selection, cameras, Split configuration and global tab order persist. Device-specific touch/trackpad and cross-browser coverage remain additional manual work. Existing mobile authoring restrictions, including hidden Split below 700px, remain unchanged.
+
+## Round 09 — unified layout, application appearance and Story Board images (2026-11-13)
+
+Starting branch HEAD: `ae38810` on `codex/a1-full-concept`. Implementation milestone: `c7b15e2`. A separate follow-up commit records the final gutter/theme refinements, safety cases, updated regression expectations and this report. No merge into main and no database reset or sample recreation.
+
+### Layout and shared workspace UI
+
+`layout.css` centralizes `--page-gutter`, `--content-max-width`, `--workspace-gutter`, `--toolbar-control` and `--toolbar-gap`. Global header, Back to Library, title/actions and the one shared draggable tablist use the same global grid. Canvases use a wider symmetric gutter; Reader retains its independent centered 850px EPUB text column. Root `scrollbar-gutter: stable` reserves consistent scrollbar space. Canvas sizing measures the body's usable width, avoiding a second allocation of the reserved scrollbar gutter.
+
+Only `body.library-route` is viewport-locked (`100dvh`, flex layout, scoped overflow). `html` and unscoped `body` do not receive overflow:hidden. Header/footer are fixed flex sections; the Library is the remaining min-height:0 area. Many Library tabs have an internal capped scroll region. Spines retains full-width, natural-thickness, zero-gap rendering and vertical scrolling inside `#books`. Shelf scales its entire arrangement, including stacks, to the available region. Horizontal shadow overflow is clipped inside the shelf. Reader still grows the page; Split Reader scrolls internally. Route changes remove the Library lock.
+
+Board and Map share toolbar/button/search measurements, surface tokens, canvas boundaries, lower-left camera controls, and secondary **More** menus. Existing control nodes/IDs/handlers are moved, not cloned or deleted. `container-type:inline-size` adapts compact controls at panel widths of 650/390px, including divider changes. Inspectors are dismissible absolute overlays, independently scrollable and bounded by their panel; they do not consume canvas width or trigger camera fitting. Board now has an explicit Close inspector action. Fullscreen retains the existing single tablist, global saved order, keyboard reorder, all four workspaces and independent cameras.
+
+### Global appearance and fonts
+
+`AppearanceModel` owns normalization, preset definitions, neutral token derivation, luminance/contrast warnings and reliable font stacks. `appearance.css` maps these semantic tokens to global chrome, dialogs, controls, toolbars, canvases, grids, labels, edges, minimap and inspectors. Black uses #0A0A0A / #F5F5F5 / #F2EF24. White uses #FFFFFF / #171717 / #777777 and neutral UI shades. Warm Paper uses #F0E9DB / #171717 / #171717 with tonal paper surfaces. Custom retains exactly the user's background/text/accent values and remembers them when presets change. Category/avatar colors, artwork and annotation colors remain content colors. EPUB iframe styles remain owned by Reader.
+
+The global setting `applicationAppearance` stores `{theme, custom:{background,text,accent}, font}` through the existing settings store. Two live DOM previews (Library and Workspace) have their own scoped tokens/font and do not apply drafts to the rest of the application. Save/Apply persists; Cancel discards; Reset previews Black/default and confirms before discarding unsaved work. Editable hex fields and color pickers synchronize. Low contrast is warned about, never silently rewritten.
+
+The Interface Font selector offers Application Default, Arial, Helvetica, Georgia, Times New Roman and Courier New plus the existing Shared Font Library. Font import reuses that library, validates actual FontFace decoding, supports TTF/OTF/WOFF/WOFF2 under 15 MB and stores the original font Blob. FontFace is reconstructed after refresh/restore; no transient blob URL is persisted. Missing/failed fonts use the default stack; deleting the selected UI font resets the global selection safely and retains other fonts. Fallback glyph stacks support Vietnamese text when the chosen font lacks glyphs. Fonts do not override book-spine typography, EPUB fonts or explicit card font overrides. Import saves a shared font asset even if the appearance draft is canceled; the UI states this clearly.
+
+### Existing Image Cards extended
+
+`board-images.js` extends the existing `image` card type. Edit tools provides **Add Image** with a real file chooser and multi-file support. Native File drag events are recognized separately from pointer-based card movement/panning; View mode supplies an Edit mode message without changing cards. Dropped files map `(client - canvas origin - camera translation) / zoom` into board coordinates. PNG/JPEG/WebP/GIF decoding, 10 MB limits and 60-megapixel limits give useful errors. Original GIF bytes remain animated browser images rather than flattened bitmaps.
+
+Cards support caption, image preview, Contain/Cover, move/resize, connections, replacement and deletion/Undo. Replacement changes the source asset reference while retaining the card ID, coordinates, dimensions, caption, display mode and connection IDs. Immutable original Blob assets are stored once per board under `board.assets[assetId]`; cards reference `imageAssetId`. Legacy inline `card.image` continues to work. Merge/Undo unions immutable assets to preserve concurrent/shared references; deletion does not garbage-collect assets still needed elsewhere. Session object URLs are regenerated from stored assets and cached by immutable asset ID, never persisted. The existing generic complete ZIP encoder includes all Blob assets, settings and fonts; restore validates image decoding and missing references. No new IndexedDB store/schema is required.
+
+### Changed files
+
+Production additions: `dist/layout.css`, `layout.js`, `canvas-ui.js`, `appearance-model.js`, `appearance.js`, `appearance.css`, `board-images.js`.
+
+Production updates: `dist/index.html`, `archive.js`, `board.js`, `model.js`, `workspace.js`.
+
+Test additions: `tests/round09.html`, `round09.js`, `round09.test.cjs`, `round09-safety.html`, `round09-safety.js`, `desktop-drop.html`, `desktop-drop.js`, `layout-preview.html`, `layout-preview.js`, and generated test-only `tests/fixtures/board-image.png` / `board-image.gif`.
+
+Regression/documentation updates: `tests/round08.html/js`, `workspace03.html/js`, `studio02.html/js`, `README.md`, `VALIDATION.md`. Old tests now measure usable Spines width inside its scrollbar, fullscreen usable body width after deliberate scrollbar reservation, theme-aware Settings text, and actual saved reading progress in the cover tooltip. These changes reflect the new requirements; original geometry/artwork/annotation assertions remain.
+
+### Actual test results
+
+- **8 Node test files pass** (`node --test tests/*.test.cjs`), covering migrations, stable IDs, stacks, Reader/Board merges, trees/relationships, ZIP/assets, appearance normalization/contrast/font fallback and immutable asset merge safety. Static root JS syntax and git whitespace checks pass.
+- **139 Round 09 actual-browser assertions — DONE.** Library viewport behavior at 1024/1280/1440/1920px × 560/900px, 16-book full-width Spines internal scrolling and readable typography; shared alignment and Reader scrolling; isolated live previews/Cancel; all presets reaching Board/Network/My Trees; custom retention/contrast; font refresh/missing/invalid handling and rendered Vietnamese text; unchanged EPUB styles/content colors; four image formats/invalid/oversize handling; captions/fit/replacement IDs/connections; transformed file-drop coordinates; refresh, image deletion/Undo; Split 30/50/70 ratios at all four widths without toolbar/page overflow; member presence and non-destructive inspectors; fullscreen switching; exact GIF bytes, image metadata/fonts/settings in ZIP and atomic clean-database restore.
+- **11 safety assertions — DONE.** Reset confirmation/cancellation/defaults; selected-font deletion and safe fallback with other fonts retained; two cards sharing one asset survive scoped deletion; View mode drop preserves cards and provides feedback.
+- **68 Round 08 browser regression assertions — DONE.** Explicit tree membership and all templates, Network edge creation/editing with stable IDs, scoped deletion, shared registry, ranks/local connections, tab-order drag threshold/keyboard/global persistence, fullscreen, Split, old/new ZIP compatibility and original user data preservation.
+- **62 Reader/workspace browser regression assertions — DONE.** Long/short chapter page sizing; actual page and Split scrolling; annotations/notes/repeated Pins; source progress/reflow; full/Split cameras and positions; chapter return, Jump to Source, Start Over, Finished semantics and ZIP.
+- **40 artwork/studio browser regression assertions — DONE.** Original renderer/fit/zoom/position/orientations, independent cover/spine assets, drafts/Cancel, EPUB replacement, cover tooltip, stack gaps, alignment and ZIP restore.
+- Total: **320 passing browser assertions across five suites**, plus native interactions below. Test apps use isolated localhost:8001. Existing port 8000 user data was not reset, replaced or used for destructive scenarios. Existing test-origin records are preserved additively.
+
+Native in-app browser checks:
+
+1. The real file chooser imported `board-image.png` and rendered the new card.
+2. Physical mouse dragging moved card `fc98439f-3c86-4dac-9c02-cd8449196b05` from approximately (680.77,133.08) to (1010.90,244.69). Physical corner resizing changed it from 300×266.15 to 394.32×340.04. Refresh retained these dimensions/position and the 520px original image.
+3. Physical Reader-tab dragging placed it before Relationship Map without changing active Story Board.
+4. Physical Split divider dragging changed the saved ratio from 70 to 50. Compact tools remained usable; explicit fullscreen Fit framed the complete arrangement.
+5. Opening/closing the actual tree inspector preserved the exact rendered transform and canvas width.
+6. The Finder-to-native-Chrome drag attempt was blocked: macOS Computer Use permissions were not granted. No native desktop drop success is claimed. A prepared `tests/desktop-drop.html` harness is available for this final OS-level check when permissions are enabled. Browser File-drop event handling and transformed placement were tested in the actual app separately.
+
+### Screenshot evidence
+
+Saved under `/Users/janjan/Documents/ChatGPT/Archive of me/`, captured from the real browser and visually inspected:
+
+- `round09-appearance-preview.png` — interactive White Workspace preview inside the unchanged saved application.
+- `round09-white-map.png` — actual light My Trees canvas, neutral chrome and preserved category colors.
+- `round09-paper-tree-inspector.png` — Warm Paper genealogy and dismissible overlay.
+- `round09-paper-images.png` — Warm Paper Board with uploaded images.
+- `round09-black-split.png` — dark normal Split after native divider drag.
+- `round09-black-fullscreen.png` — dark fullscreen Split, shared draggable navigation, genealogy and Image Cards after explicit Fit.
+- `round09-library-spines-1024x560.png`, `round09-library-shelf-1024x560.png` — actual 1024×560 embedded app viewport with 16 books and internal navigation/shelf overflow. The screenshot crops only the test harness chrome.
+- `round09-library-spines-1280x720.png`, `round09-library-shelf-1280x720.png` — additional default-viewport Library captures from the earlier visual pass.
+- Logs: `round09-browser-results.txt`, `round09-safety-results.txt`, `round09-round08-regression.txt`, `round09-reader-regression.txt`, `round09-studio-regression.txt`.
+
+### Remaining limitations
+
+Native Finder-to-Chrome drag remains unverified due to denied macOS Computer Use permissions; implementation and browser File-drop coordinates are covered. Very dense graphs still have the earlier prototype label/performance limits. Image assets are retained conservatively for Undo/shared references; orphan-asset garbage collection is not implemented, so repeated replacements can grow backups. Multi-image drops are validated as one batch and images are initially offset for manual arrangement. Font coverage depends on the selected font and installed fallbacks; unavailable glyphs cannot be invented. Cross-browser/device testing beyond the available browser remains future work. Existing mobile authoring restrictions and Round 08 opaque legacy-tree preservation remain unchanged.
