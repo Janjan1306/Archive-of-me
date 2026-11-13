@@ -499,3 +499,17 @@ Fresh full-page screenshots were used where the in-app browser's ordinary captur
 ### Known limitations / manual inspection
 
 Explicit low-contrast user colors are warned about and retained, as requested; arbitrary chosen colors are not forcibly made compliant. Native/system font fallbacks can vary slightly across platforms. Brand internal text is intentionally compact at header size; aesthetic review at the user's preferred browser zoom remains appropriate. Additional cross-browser/mobile/device coverage is future work; existing mobile authoring restrictions remain. Earlier prototype limits (very dense graph labeling and conservative retained image assets for Undo) remain. There are no known blocking Round 10 regressions in the tested environment.
+
+## Visual interaction refinement — 2026-11-13
+
+Targeted changes in `styles.css`, `concept.css`, `appearance.css`, and `content-style.css`; entrypoint asset versions updated. Removed the two book brightness filters and their filter transitions. Excluded World nodes from generic button hover backgrounds, removed label fill plates and avatar-image filtering, and kept the existing custom-fill-derived circular brightening. Labels use theme ink without background plates. Keyboard focus uses a dashed outline on the circular avatar; mouse selection has no outline or shadow. No application JavaScript, schema, saved customization, or layout logic changed.
+
+Real browser verification used `tests/interaction-refinement.html` on isolated port 8001 with additive fixtures:
+
+- 207 checks passed across Black, White, Warm Paper, and Custom; Network and all three My Trees templates; visible Relationship Map in Split; fullscreen; Inspector open/close; readable initials; stable saved book appearance, character colors and relationships; pre-existing archive records unchanged.
+- Native mouse hover over a neon spine returned `rgb(25, 255, 56)` both before and during hover, `filter: none`, `opacity: 1`, and `cursor: pointer`. Clicking opened Reader without altering its saved appearance.
+- Native node hover changed the circular custom fill from `rgb(23, 51, 74)` to `rgb(32, 59, 81)`. Wrapper and label backgrounds remained transparent; no shadow/ring appeared. Native hover was also verified in White and Black.
+- Native mouse selection opened the Character Inspector. Native Tab focus produced a dashed circular outline only on the keyboard-focused node; the selected node had no outline.
+- All nine Node regression files passed. No data reset or migration was performed. Existing navigation still persists its normal camera/presentation preferences on the owned fixture; no new persistence behavior was introduced.
+
+Screenshots and browser output are in the sibling `interaction-review/` directory outside Git.
