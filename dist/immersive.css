@@ -1,18 +1,10 @@
-/* One explicit application fullscreen state; no native fullscreen or DOM replacement. */
-.workspace-expand{position:relative;z-index:13;display:flex;justify-content:flex-end;margin-top:-45px;margin-bottom:8px;pointer-events:none}
-.workspace-expand button{pointer-events:auto;font-size:13px;min-height:34px;padding:6px 10px;border:1px solid var(--ui-border)}
-.workspace-expand:has(button[hidden]){display:none}
-#workspace:has(#expandWorkspace:not([hidden])) .workspace-tabs{padding-right:140px}
-#immersiveBar{position:fixed;inset:0 0 auto;height:44px;z-index:60;display:flex;align-items:center;gap:16px;padding:4px 16px;background:#0a0a0a;color:#eee;box-sizing:border-box;font:14px var(--ui-font)}
-#immersiveBar[hidden]{display:none}#immersiveTitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:50vw;font-weight:600}#immersiveMode{color:#aaa;white-space:nowrap;font-size:12px}#exitWorkspace{margin-left:auto;white-space:nowrap;min-height:34px;padding:6px 10px;font-size:13px;border:1px solid var(--ui-border)}
-body.workspace-immersive{overflow:hidden}
+/* One application presentation state; Reader remains an ordinary scrolling page. */
+.workspace-expand{position:relative;z-index:13;display:flex;justify-content:flex-end;margin-top:-45px;margin-bottom:8px;pointer-events:none}.workspace-expand button{pointer-events:auto;font-size:13px;min-height:34px;padding:6px 10px;border:1px solid var(--ui-border)}.workspace-expand:has(button[hidden]){display:none}#workspace:has(#expandWorkspace:not([hidden])) .workspace-tabs{padding-right:140px}
+#immersiveBar{position:fixed;inset:0 0 auto;height:44px;z-index:60;display:flex;align-items:center;gap:16px;padding:4px 12px;background:#0a0a0a;color:#eee;box-sizing:border-box;font:13px var(--ui-font)}#immersiveBar[hidden]{display:none}#immersiveTitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:22vw;font-weight:600}#immersiveTabs{display:flex;gap:4px;min-width:0}#immersiveTabs button{font-size:13px;min-height:34px;padding:6px 10px;white-space:nowrap}#immersiveTabs [aria-selected=true]{color:var(--acid);background:#20211b}#exitWorkspace{margin-left:auto;white-space:nowrap;min-height:34px;padding:6px 10px;font-size:12px;border:1px solid var(--ui-border)}
+body.workspace-immersive{overflow:hidden}body.workspace-immersive.immersive-reader{overflow:auto}
 body.workspace-immersive>header,body.workspace-immersive>footer,body.workspace-immersive .workspace-top,body.workspace-immersive .workspace-heading,body.workspace-immersive .workspace-tabs,body.workspace-immersive .workspace-expand{display:none}
-body.workspace-immersive #workspace{padding:0;margin:0;width:100%;max-width:none}
-body.workspace-immersive #workspacePanels{position:fixed;inset:44px 0 0;margin:0;width:100%;max-width:none;height:calc(100dvh - 44px);min-height:0;z-index:40}
-body.workspace-immersive #readerPanel,body.workspace-immersive #boardPanel,body.workspace-immersive #worldPanel{min-width:0;min-height:0}
-body.workspace-immersive #resumePrompt{display:none}
-body.workspace-immersive #boardSaveState{position:absolute;right:10px;bottom:4px;z-index:5;pointer-events:none;background:#101215b0}
-body.workspace-immersive .world-tools{padding:5px 8px;gap:5px}
-body.workspace-immersive .board-tools{padding:5px 8px}
-@media(max-width:1100px){.workspace-tabs{gap:14px}.workspace-tabs button{font-size:12px}.workspace-expand button{font-size:12px}body.workspace-immersive .world-tools input{width:150px}body.workspace-immersive .world-tools select{width:130px}}
-body.workspace-immersive #status{z-index:80}
+body.workspace-immersive #workspace{padding:0;margin:0;width:100%;max-width:none}body.workspace-immersive #workspacePanels{position:fixed;inset:44px 0 0;margin:0;width:100%;max-width:none;height:calc(100dvh - 44px);min-height:0;z-index:40}
+body.immersive-reader #workspace{padding-top:44px}body.immersive-reader #workspacePanels{position:relative;inset:auto;height:auto;width:100%;margin:0}body.immersive-reader .reader-controls{top:44px}
+body.workspace-immersive #resumePrompt{display:none}body.workspace-immersive #boardSaveState{position:absolute;right:10px;bottom:4px;z-index:5;pointer-events:none;background:#101215b0}body.workspace-immersive .world-tools,body.workspace-immersive .board-tools{padding:5px 8px;gap:5px}body.workspace-immersive #status{z-index:80}
+@media(max-width:1100px){.workspace-tabs{gap:14px}.workspace-tabs button{font-size:12px}.workspace-expand button{font-size:12px}#immersiveTitle{max-width:16vw}#immersiveBar{gap:8px}#immersiveTabs button{font-size:12px;padding:6px 8px}}
+@media(max-width:700px){#immersiveTabs [data-workspace-mode=split]{display:none}#immersiveTitle{display:none}#immersiveTabs{gap:0;flex:1}#immersiveTabs button{padding:5px;font-size:11px}#exitWorkspace{font-size:11px;padding:5px}}

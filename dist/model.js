@@ -1,6 +1,7 @@
 /* Pure archive invariants, also loaded by the Node regression suite. */
 (function(root){
 const Model={
+  splitWorkspace(book){const allowed=['reader','board','map'],saved=book?.splitWorkspace;return saved&&allowed.includes(saved.left)&&allowed.includes(saved.right)&&saved.left!==saved.right?{left:saved.left,right:saved.right}:{left:'reader',right:'board'}},
   autoStack(records){
     const changes=new Map(),mode=b=>b.stackMode||(b.stackId&&Model.stackMembers(records,b).length>1&&!b.stackId.startsWith('legacy-stack-')&&!b.stackId.startsWith('auto-stack-')?'manual':'auto');
     for(const library of new Set(records.map(b=>b.libraryId))){let run=[];
