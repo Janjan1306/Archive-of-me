@@ -303,3 +303,51 @@ Actual browser screenshots were saved in `/Users/janjan/Documents/ChatGPT/Archiv
 ### Remaining prototype limits
 
 The force layout is deterministic static relaxation, not a continuously animated physics simulation; very large/dense graphs still need further performance and label-collision tuning. Hierarchy/Family manual vertical movement is deliberately constrained to retain rank/generation semantics. Contradictory/cyclic fictional family structures are grouped finitely rather than treated as a strict pedigree or assigned invented ancestors. Fullscreen is temporary presentation state after refresh, while mode/pair/ratio, cameras, view, filters and data persist. Device-specific pinch/trackpad behavior, extended cross-browser coverage and very small mobile authoring remain manual checks; the task targets desktop/laptop. Full Fit of truly distant content may still be small by definition; Focus Selected/Reset avoid changing the underlying data. Earlier Round 06 tests expecting no fullscreen Reader and a forced Split Fit are intentionally superseded by the current Round 07 acceptance suite.
+
+## Round 08 — Network, My Trees and shared reorderable navigation (2026-11-13)
+
+Implementation milestone: `45bf8eb` (Add curated My Trees and unified reorderable workspace navigation). Follow-up commit adds legacy-format guards, the camera transition correction and this validation report. Both commits are on `codex/a1-full-concept`; main is not merged.
+
+### Changes and root causes
+
+The missing Network edges had several interacting causes: edge filtering happened before the revealed endpoint was appended; rapidly created nodes could share the exact same saved center; stale focus/type/organization filters could hide newly saved facts; and parallel/opposite connections could occupy the same curve. Network now derives edges from the final visible node IDs, separates coincident rendered positions without overwriting saved positions, avoids quick-create collisions, reveals saved relationships immediately, and gives parallel connections separate curves. Editing preserves IDs and redraws endpoints/labels immediately. SVG edges have contrast, non-scaling strokes and a transparent 16px selection hit area. Explicit filters still apply.
+
+One physical `#workspaceNavigation` tablist moves between normal/fullscreen hosts, with identical compact typography, alignment and yellow underline. Horizontal pointer movement must exceed 6px before reordering starts. A yellow insertion line and subtle dragged-tab feedback precede drop; drag suppresses activation. Every tab, including Reader, can move anywhere. Alt+Shift+Left/Right moves the focused tab without changing the active workspace; ordinary arrow/Home/End switching follows its current order. Focus outlines and a live announcement are provided. The global `workspaceTabOrder` application setting is a strictly validated four-ID permutation, defaulting safely for duplicates/missing/unknown values. Reorder writes settings only, never book records, and complete ZIP backup includes the setting.
+
+My Trees replaces implicit top-level Family/Hierarchy views with unlimited explicitly curated tree records in `book.world.trees`. Family, Hierarchy and Blank templates all start empty and reference shared character IDs. The collection supports create/edit/open/duplicate/delete. Member search, multi-select, inline character creation, scoped removal and separately confirmed global deletion are functional. Global relationships remain shared; adding outside endpoints requires explicit membership consent. Family scopes the graph before generating known generations and places unrelated selected members in an Unconnected Members area. Hierarchy ranks, order and assignments are local structured data, with optional organization linkage and explicit rank import. Blank positions and labeled local connection IDs persist independently from global facts. The shared graph renderer/inspectors/pan/zoom/fit are used in normal, Split and fullscreen modes.
+
+Existing registries, Library membership, EPUB bytes, artwork, annotations, Story Board links/cards/cameras and future fields are retained. Legacy Family/Hierarchy view/filter/camera data is preserved, with no inferred populated tree. Unknown tree formats are retained byte-for-byte as structured data; a visible notice pauses tree mutations where an unambiguous migration is unavailable. Compatible optional tree fields receive read defaults without rewriting stored records. ZIP uses the existing complete archive path; old ZIPs remain importable. No IndexedDB reset, schema bump or sample recreation was performed.
+
+Regression testing found a Board camera transition could attach the new panel's viewport dimensions to the previous camera. `cameraSave(false)` now uses the previous measured workspace size when changing full/Split modes. Reader and Board tests verify raw x/y/zoom plus accurate viewport metadata. The A1 recovery test now creates its own complete EPUB/Board fixture rather than selecting an arbitrary prior test book; it retains all other isolated archive data.
+
+### Files changed
+
+Production: `dist/app.js`, `archive.js`, `board.js`, `immersive.js`, `immersive.css`, `index.html`, `model.js`, `workspace.js`, `world-model.js`, `world.js`, `world.css`; new `dist/navigation.js`, `navigation.css`, `tree-model.js`, `trees.js`, `trees.css`.
+
+Tests/documentation: new `tests/round08.html`, `round08.js`, `round08.test.cjs`; adapted `tests/world.html`, `world.js`, `workspace03.html`, `workspace03.js`, `acceptance.html`, `acceptance.js`; `README.md`, `VALIDATION.md`.
+
+### Automated and actual-browser results
+
+- All seven Node test files pass: concept, library, Round 07, Round 08, stacking, static assets and world. Round 08 additionally covers more than 16 trees, opaque legacy preservation, stable IDs, explicit membership, scoped deletion, ranks, local links and coincident edges.
+- `tests/round08.html`: **68 PASS, DONE** in the actual browser on isolated localhost:8001. Covers immediate edge create/edit/delete and filtering, stable relationship IDs, all templates, no inferred members, shared registry renames, safe removals/deletions, ranks, local connection persistence, independent cameras, Split swapping, fullscreen, Reader position, settings-only tab reordering, second-book/refresh persistence, strict invalid-order fallback and ZIP/new/old restore.
+- Actual rendering at 1024, 1280, 1440 and 1920px checked for normal/fullscreen tree overflow and navigation usability by the Round 08 browser suite.
+- Native physical mouse dragging moved Relationship Map before Split, Reader to last, and Story Board while fullscreen. Each drop changed the order immediately without activating the dragged tab. Exit and refresh retained the same order. Native normal click switched Reader, and Alt+Shift+Left reordered it while retaining the active Reader state.
+- Native form creation of Mira → Rowan Parent rendered its line immediately. Clicking that actual line opened the inspector; editing to Ally retained relationship ID `9f4e6c03-5df7-45f3-943e-fa961ca5a6c3` and updated the label immediately.
+- Native Blank Tree node drag changed its position from (-210,270) to approximately (-150.69,227.64); refresh retained the exact rendered position. Its local edge opened a clearly identified tree-local connection inspector.
+- Actual-browser regression suites all reached DONE: shared World/Registry/Board/old ZIP; Reader/annotation/source/Split/cameras; appearance studio/Spines/ZIP; custom font rendering/ZIP fallback; A1 migration/recovery/capacity/import/ZIP rollback/mobile. A1 recovery contains 45 passing assertions.
+- Test fixtures use isolated port 8001; the user's port 8000 archive was not reset or replaced. No real user book was used for destructive fixture scenarios.
+
+Screenshots were saved and visually inspected under `/Users/janjan/Documents/ChatGPT/Archive of me/`:
+
+- `round08-network.png` — actual visible edited Network edges and compact fullscreen navigation.
+- `round08-my-trees.png` — minimal collection with three independently named templates.
+- `round08-family.png` — selected family generations and separate unconnected member, fullscreen.
+- `round08-hierarchy.png` — custom rank levels, peers and scoped membership.
+- `round08-blank.png` — native moved node and local connection inspector.
+- `round08-split.png` — normal customizable Map/Reader Split with saved tab order.
+- `round08-split-fullscreen.png` — same shared navigation and tree in fullscreen Split.
+- `round08-browser-results.txt`, `round08-recovery-results.txt` — full browser assertion logs.
+
+### Remaining prototype limitations
+
+Network uses deterministic static relaxation; very large or dense graphs may still need label-collision/performance tuning. Contradictory family relationships form finite groups rather than inventing a definitive genealogy. Hierarchy rank import is explicit, not continuous organization synchronization. Unknown legacy tree formats are preserved but require a later explicit migration before editing those tree collections. Fullscreen presentation itself is temporary across refresh; tree selection, cameras, Split configuration and global tab order persist. Device-specific touch/trackpad and cross-browser coverage remain additional manual work. Existing mobile authoring restrictions, including hidden Split below 700px, remain unchanged.

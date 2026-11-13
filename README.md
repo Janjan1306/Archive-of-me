@@ -7,7 +7,7 @@ A customizable digital library and EPUB reader with visual story mapping, annota
 
 A static, browser-local library, real EPUB reader and linked Story Board. This upgrade extends the existing vanilla HTML/CSS/JavaScript app. No server, account, paid API or build step is required.
 
-Current Round 07 behavior: one Book Workspace Shell supports Reader, customizable Split, Story Board and Relationship Map, including navigation within fullscreen. Spines remains a full-width, page-scrolling column. Earlier compact/natural-length Spines sections are superseded by Round 06; Round 06 fullscreen navigation restrictions and automatic Split fitting are superseded by Round 07.
+Current Round 08 behavior: one Book Workspace Shell supports Reader, customizable Split, Story Board and Relationship Map, including one shared compact navigation within fullscreen. Drag tabs horizontally to reorder them, or focus a tab and press Alt+Shift+Left/Right. The order is a global setting shared across books and included in complete ZIP backups. Normal clicks and ordinary arrow-key navigation still switch workspaces. Spines remains a full-width, page-scrolling column. Earlier compact/natural-length Spines sections are superseded by Round 06; Round 06 fullscreen navigation restrictions and automatic Split fitting are superseded by Round 07.
 
 ## Run
 
@@ -262,3 +262,13 @@ Drag Network nodes freely, or use Shift+arrow keys on a focused node. Hierarchy 
 Board zoom is no longer automatically fitted on Split entry. Saved manual zoom and separate full/Split cameras are respected. Explicit Fit still includes all cards, including negative/distant coordinates. **Focus Selected** fits a selected card/group at a readable scale (capped at 1.25×), and Reset View remains available. **Zoom details** reports content bounds, current/saved zoom and the Fit overview so a distant card's effect is explainable. Pinning from Reader while Board is hidden saves the Quote Card without changing the selected panel pair or hidden camera. Shared Map edits update visible linked Board cards without panning either canvas.
 
 Validation and screenshots: see the Round 07 section of `VALIDATION.md`. Current full acceptance runner is `tests/round07.html` on isolated port 8001. Earlier Round 06 acceptance assertions that Reader has no fullscreen control or Split always auto-fits are historical and intentionally superseded.
+
+## Round 08 — Network and My Trees
+
+Relationship Map now has **Network** and **My Trees**. Network uses the existing shared Character, Organization and Relationship registries; saved edges appear immediately and can be selected/edited without changing their IDs.
+
+Create unlimited named Family, Hierarchy or Blank trees. New trees start empty. **Add Member** searches the shared registry and supports quick creation; membership is explicit, never inferred from surnames or organizations. Removing from a tree preserves the global character. The separate global deletion action explains its wider effect and requires confirmation.
+
+Family trees arrange known generations and separate unconnected members. Hierarchy trees have editable, ordered local ranks and optional organization links; importing organization ranks is explicit. Blank trees support free node positions and local labeled connections, distinct from global relationship facts. Each tree has independent camera/positions and works in Split View and fullscreen.
+
+Trees live under each book's `world.trees`; the application settings record stores `workspaceTabOrder`. Existing generic complete ZIP export/restore includes both. No schema reset or sample regeneration is required. Retired Family/Hierarchy view settings are preserved as legacy data; no inferred populated trees are created. Unrecognized legacy tree formats remain intact and tree edits are paused for those books until an explicit migration can be defined. See `VALIDATION.md` for test coverage and screenshots.
