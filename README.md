@@ -298,3 +298,8 @@ Book title/author fonts remain in the existing Customize Book controls, independ
 The geometric SVG logo follows the supplied reference: internal **Archive / of / Me** lettering plus an external **Archive of Me** wordmark. Polygon and wordmark use application Text Color; internal lettering uses Background Color. Its Arial/Helvetica brand typography is independent of UI Font. A themed polygon favicon is derived from the same geometry. See `dist/assets/logo.svg`, `dist/assets/favicon.svg` and `VALIDATION.md`.
 
 New optional fields are `board.cards[].colors.{background,text,accent}` and `world.characters[].colors.{fill,text}`. They use existing IndexedDB records and generic complete ZIP backup/restore. No data reset, record recreation or schema upgrade is required.
+
+
+## Round 11 — Six-book Sample Library
+
+The supplied editorial JSON is maintained in `sample-content/`; regenerate the static plan with `python3 scripts/prepare-sample-plan.py`. Settings now provides explicit six-EPUB development import, **Add Sample Library**, and **Export Library seed**. Installation is additive and idempotent; no IndexedDB reset is used. Supplied EPUBs and private seed ZIPs are excluded from Git/public deployment. See [ROUND11.md](ROUND11.md) for per-book results, customization/export instructions, validation, and limitations.

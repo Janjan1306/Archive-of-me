@@ -220,7 +220,8 @@ const SamplePlan={
         }
       ],
       "connections": [],
-      "trees": []
+      "trees": [],
+      "highlightPlans": []
     },
     {
       "id": "pride",
@@ -508,7 +509,8 @@ const SamplePlan={
           "assignments": {},
           "description": "Curated Bennet household; other characters are not added automatically."
         }
-      ]
+      ],
+      "highlightPlans": []
     },
     {
       "id": "dracula",
@@ -837,7 +839,8 @@ const SamplePlan={
           "contrasting narrator"
         ]
       ],
-      "trees": []
+      "trees": [],
+      "highlightPlans": []
     },
     {
       "id": "tru-tien",
@@ -1189,7 +1192,8 @@ const SamplePlan={
           },
           "description": "Một thành viên có thể thuộc nhiều tree, dùng chung Character Registry."
         }
-      ]
+      ],
+      "highlightPlans": []
     },
     {
       "id": "thien-quan",
@@ -1535,7 +1539,33 @@ const SamplePlan={
           "visual reference"
         ]
       ],
-      "trees": []
+      "trees": [],
+      "highlightPlans": [
+        {
+          "id": "tq-highlight-01",
+          "chapter": "Text/C1.html",
+          "topic": "Lý tưởng của Tạ Liên",
+          "quote_text": null,
+          "reader_anchor": null,
+          "status": "needs_real_reader_text_selection"
+        },
+        {
+          "id": "tq-highlight-02",
+          "chapter": "Text/C2.html",
+          "topic": "Lần phi thăng",
+          "quote_text": null,
+          "reader_anchor": null,
+          "status": "needs_real_reader_text_selection"
+        },
+        {
+          "id": "tq-highlight-03",
+          "chapter": "Text/C4.html",
+          "topic": "Vụ quỷ tân lang",
+          "quote_text": null,
+          "reader_anchor": null,
+          "status": "needs_real_reader_text_selection"
+        }
+      ]
     },
     {
       "id": "guilt",
@@ -1909,7 +1939,8 @@ const SamplePlan={
           "new lead"
         ]
       ],
-      "trees": []
+      "trees": [],
+      "highlightPlans": []
     }
   ]
 };

@@ -54,10 +54,14 @@ const SampleLibrary={
    if(p.id==='thien-quan'){
     const href='Text/C1.html',entry=zip.file(href),needle='cứu vớt chúng sinh';
     if(entry){const doc=EPUBDocument.parse(await entry.async('string')),text=doc.body.textContent,paragraph=[...doc.querySelectorAll('p')].find(n=>n.textContent.includes(needle)&&n.textContent.length<160),quote=paragraph?.textContent,start=quote?text.indexOf(quote):-1;
-     if(start>=0&&text.indexOf(quote,start+quote.length)<0){const source={href,chapter:'Chương 1 — Quan Trời Ban Phúc',start,end:start+quote.length,text:text.slice(start,start+quote.length)},highlight={...source,id:stable('highlight-0'),color:'#c4a3ff',note:'First short paragraph containing the editorial search cue, verified against the supplied EPUB.'};highlights.push(highlight);
+     if(start>=0&&text.indexOf(quote,start+quote.length)<0){const source={href,chapter:'Chương 1 — Quan Trời Ban Phúc',start,end:start+quote.length,text:text.slice(start,start+quote.length)},highlight={...source,id:stable(p.highlightPlans[0]?.id||'highlight-0'),color:'#c4a3ff',note:'First short paragraph containing the editorial search cue, verified against the supplied EPUB.'};highlights.push(highlight);
       const card=cards.find(c=>c.sampleKind==='quote_placeholder');if(card){Object.assign(card,{type:'quote',body:source.text,source,highlightId:highlight.id});reports.find(r=>r.title===card.title).exactAnchor=true}
      }
     }
+   }
+   for(const [i,h]of (p.highlightPlans||[]).entries()){
+    if(i===0&&highlights.length)continue;
+    cards.push({id:stable(h.id+'-reading-prompt'),type:'note',title:'Reading prompt — '+h.topic,body:'Choose an exact passage in Reader for “'+h.topic+'”, then Highlight or Pin to Board. Editorial chapter reference: '+h.chapter+'. No source anchor has been fabricated.',color:p.color,x:1080,y:40+i*280,w:300,h:240,editorialReference:h.chapter});
    }
    // Character cards share the registry rather than copying character records.
    characters.forEach((ch,i)=>cards.push({id:stable('character-card-'+i),type:'character',characterId:ch.id,title:ch.name,body:ch.role,color:p.color,x:40+i%3*340,y:40+Math.ceil(p.cards.length/3)*300+Math.floor(i/3)*240,w:280,h:200}));
