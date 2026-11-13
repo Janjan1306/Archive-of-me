@@ -4,7 +4,7 @@
  fonts:{default:'"DM Sans",Arial,"Noto Sans",sans-serif',Arial:'Arial,"Helvetica Neue",sans-serif',Helvetica:'Helvetica,"Helvetica Neue",Arial,sans-serif',Georgia:'Georgia,"Times New Roman",serif','Times New Roman':'"Times New Roman",Georgia,serif','Courier New':'"Courier New",Courier,monospace'},
  presets:{black:{background:'#0a0a0a',text:'#f5f5f5',accent:'#f2ef24'},white:{background:'#ffffff',text:'#171717',accent:'#777777'},paper:{background:'#f0e9db',text:'#171717',accent:'#171717'}},
  hex(v){return typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v)},
- normalize(value){const v=value&&typeof value==='object'?value:{};return {...v,theme:['black','white','paper','custom'].includes(v.theme)?v.theme:'black',custom:Object.fromEntries(Object.entries(A.defaults.custom).map(([k,d])=>[k,A.hex(v.custom?.[k])?v.custom[k]:d])),font:typeof v.font==='string'&&(Object.hasOwn(A.fonts,v.font)||/^font-[-\w]+$/.test(v.font))?v.font:'default'}},
+ normalize(value){const v=value&&typeof value==='object'?value:{};return {...v,theme:['black','white','paper','custom'].includes(v.theme)?v.theme:'white',custom:Object.fromEntries(Object.entries(A.defaults.custom).map(([k,d])=>[k,A.hex(v.custom?.[k])?v.custom[k]:d])),font:typeof v.font==='string'&&(Object.hasOwn(A.fonts,v.font)||/^font-[-\w]+$/.test(v.font))?v.font:'default'}},
  mix(a,b,t){return '#'+[1,3,5].map(i=>Math.round(parseInt(a.slice(i,i+2),16)*(1-t)+parseInt(b.slice(i,i+2),16)*t).toString(16).padStart(2,'0')).join('')},
  luminance(hex){const c=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return c[0]*.2126+c[1]*.7152+c[2]*.0722},
  contrast(a,b){const x=A.luminance(a),y=A.luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)},

@@ -2,8 +2,8 @@
 const SampleLibrary={
  identity:'archive-of-me.six-books.v2',busy:false,
  async install(data,id){
-  if(!/^[-\w.:]{1,180}$/.test(id||''))throw new Error('Invalid seed installation identity.');
-  ArchiveModel.validate(data);if(data.libraries.length!==1||data.settings.length||data.books.some(b=>b.libraryId!==data.libraries[0].id)||data.books.filter(b=>!b.deletedAt).length>16)throw new Error('Invalid Library seed membership or capacity.');
+  if(!/^[-\w.:]{1,180}$/.test(id||''))throw new Error('Invalid Library package identity.');
+  ArchiveModel.validate(data);if(data.libraries.length!==1||data.settings.length||data.books.some(b=>b.libraryId!==data.libraries[0].id)||data.books.filter(b=>!b.deletedAt).length>16)throw new Error('Invalid Library membership or capacity.');
   // Fonts belong to the shared store. Give imported fonts new IDs and rewrite only
   // exact font references inside incoming records; existing font choices are untouched.
   const fonts=new Map(data.fonts.map(f=>[f.id,crypto.randomUUID()]));
@@ -14,14 +14,13 @@ const SampleLibrary={
  async package(libraryId){
   const latest=await ArchiveDB.read(db),library=latest.libraries.find(l=>l.id===libraryId);if(!library)throw new Error('Select a Library.');
   const selected=latest.books.filter(b=>b.libraryId===libraryId);if(!selected.length)throw new Error('This Library is empty.');
-  const missing=selected.filter(b=>!(b.file instanceof Blob));if(missing.length)throw new Error('Attach EPUBs before exporting a reusable seed: '+missing.map(b=>b.title).join(', '));
   // Follow exact references throughout book/card/node preferences, without exporting
   // unrelated fonts or global settings.
   const required=new Set();function scan(v){if(v instanceof Blob)return;if(typeof v==='string'&&v.startsWith('font-'))required.add(v.slice(5));else if(v&&typeof v==='object')Object.values(v).forEach(scan)}scan(selected);scan(library);
   const data={books:selected,libraries:[library],fonts:latest.fonts.filter(f=>required.has(f.id)),settings:[]};
   return encodeArchive(data,{kind:'library-seed',seed:{version:1,id:library.seedIdentity||'library.'+library.id,name:library.name}});
  },
- async importPackage(file){const parsed=await decodeBackup(file,true);if(parsed.kind!=='library-seed'||parsed.seed?.version!==1)throw new Error('Choose a Library seed exported with Export Library seed. Use Storage & backup for a complete archive ZIP.');return this.install(parsed.data,parsed.seed.id)},
+ async importPackage(file){const parsed=await decodeBackup(file,true);if(parsed.kind!=='library-seed'||parsed.seed?.version!==1)throw new Error('Choose a supported Library ZIP. For a complete application backup, use Backup & Restore.');return this.install(parsed.data,parsed.seed.id)},
  async importEPUBs(files){
   if(files.length!==6)throw new Error('Select the six original EPUB files together.');
   const attachments=[];for(const file of files)attachments.push(await parseEPUB(file));
@@ -74,12 +73,12 @@ const SampleLibrary={
   return ArchiveModel.validate({books:ArchiveModel.autoStack(records),libraries:[library],fonts:[],settings:[]});
  },
  mount(){
-  if($('#sampleLibrarySettings'))return;const section=document.createElement('section');section.id='sampleLibrarySettings';section.innerHTML='<h3>Sample Library</h3><p>Install an editable collection from a Library seed, or build the development collection using your six EPUBs. Existing Libraries are preserved.</p><label>Add Sample Library<input id="sampleSeedFile" type="file" accept=".zip"></label><details><summary>Development collection</summary><p>Choose Alice, Pride and Prejudice, Dracula, Tru Tiên, Thiên Quan Tứ Phúc and Guilt together. Files stay in this browser; no EPUB is uploaded or bundled with the website.</p><label>Import six EPUBs<input id="sampleEPUBs" type="file" multiple accept=".epub"></label></details><label>Library to export<select id="seedLibrary"></select></label><button id="exportLibrarySeed">Export Library seed</button><p>Includes EPUBs, artwork, annotations, cards, relationships, trees and fonts. Keep packages private until redistribution permissions are confirmed.</p><p id="sampleResult" role="status"></p>';
+  if($('#sampleLibrarySettings'))return;const section=document.createElement('section');section.id='sampleLibrarySettings';section.innerHTML='<h3>Library Import &amp; Export</h3><p>Import a Library from a supported ZIP. Export one selected Library and its associated content.</p><label>Import Library<input id="sampleSeedFile" type="file" accept=".zip"></label><details hidden><summary>Development collection</summary><p>Choose Alice, Pride and Prejudice, Dracula, Tru Tiên, Thiên Quan Tứ Phúc and Guilt together. Files stay in this browser; no EPUB is uploaded or bundled with the website.</p><label>Import six EPUBs<input id="sampleEPUBs" type="file" multiple accept=".epub"></label></details><label>Choose a Library<select id="seedLibrary"></select></label><button id="exportLibrarySeed">Export Library</button><p>Exports this Library’s books, EPUBs, artwork, annotations, cards, relationships, trees and required fonts.</p><p id="sampleResult" role="status"></p>';
   $('#settingsBody').append(section);for(const l of archive.libraries){const option=document.createElement('option');option.value=l.id;option.textContent=l.name;option.selected=l.id===currentLibraryId;$('#seedLibrary').append(option)}
   const run=async task=>{if(this.busy)return;this.busy=true;section.querySelectorAll('input,button').forEach(n=>n.disabled=true);$('#sampleResult').textContent='Preparing and validating…';try{const result=await task();$('#sampleResult').textContent=result||'Done.'}catch(e){$('#sampleResult').textContent=e.message}finally{this.busy=false;section.querySelectorAll('input,button').forEach(n=>n.disabled=false)}};
-  $('#sampleSeedFile').onchange=e=>{const file=e.target.files[0];if(file)run(async()=>{const r=await this.importPackage(file);return r.installed?'Sample Library added. Close Settings to explore it.':'This collection was already installed. Your edits were preserved.'})};
-  $('#sampleEPUBs').onchange=e=>{const files=[...e.target.files];if(files.length)run(async()=>{const r=await this.importEPUBs(files);return r.installed?'Six-book Sample Library added. Close Settings to explore it.':'This collection was already installed. Your edits were preserved.'})};
-  $('#exportLibrarySeed').onclick=()=>run(async()=>{downloadArchive(await this.package($('#seedLibrary').value),'archive-of-me-library-seed.zip');return 'Self-contained Library seed exported.'});
+  $('#sampleSeedFile').onchange=e=>{const file=e.target.files[0];if(file)run(async()=>{const r=await this.importPackage(file);return r.installed?'Library imported. Close Settings to explore it.':'This Library was already installed. Your edits were preserved.'})};
+  $('#sampleEPUBs').onchange=e=>{const files=[...e.target.files];if(files.length)run(async()=>{const r=await this.importEPUBs(files);return r.installed?'Six-book Sample Library added. Close Settings to explore it.':'This Library was already installed. Your edits were preserved.'})};
+  $('#exportLibrarySeed').onclick=()=>run(async()=>{downloadArchive(await this.package($('#seedLibrary').value),'archive-of-me-library.zip');return 'Library exported.'});
  }
 };
 const sampleOpenSettings=openSettings;openSettings=function(...args){sampleOpenSettings(...args);if(args[0]!=='libraries')SampleLibrary.mount()};$('#aboutNav').onclick=()=>openSettings();
