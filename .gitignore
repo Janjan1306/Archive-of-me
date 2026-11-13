@@ -35,3 +35,11 @@ test-results/
 
 # dist/ is the hand-authored static application: keep it tracked.
 # tests/*.epub are small synthetic fixtures: keep them tracked.
+
+# Supplied editions and private Library packages require redistribution approval.
+*.epub
+!dist/assets/alice.epub
+!tests/*.epub
+*library-seed*.zip
+private-samples/
+sample-content/*.zip
