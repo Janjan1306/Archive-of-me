@@ -17,11 +17,11 @@ const WorkspaceShell={
   activate(tab){
     if(!Object.hasOwn(this.labels,tab))tab='reader';if(tab==='split'&&matchMedia('(max-width:700px)').matches)tab='reader';
     if(this.bookId!==activeBookId){this.bookId=activeBookId;this.sizes.clear()}
-    Reader.savePosition?.();
+    const mapWasVisible=this.visible('map');Reader.savePosition?.();
     this.reflow(states=>{
       const previous=workspaceTab;workspaceTab=tab;document.body.classList.add('workspace-open');const panels=$('#workspacePanels');panels.dataset.mode=tab;panels.classList.toggle('split',tab==='split');
       const pair=this.pair();for(const type of ['reader','board','map']){const panel=$(type==='map'?'#worldPanel':'#'+type+'Panel');panel.hidden=!(tab===type||tab==='split'&&Object.values(pair).includes(type));panel.style.gridColumn=tab==='split'?(pair.left===type?'1':'3'):'';panel.style.gridRow=tab==='split'?'2':''}
-      if(this.visible('map')&&(World.mapBookId!==activeBookId||!$('#worldCanvas')))World.open(this.book());
+      if(this.visible('map')){if(World.mapBookId!==activeBookId||!$('#worldCanvas'))World.open(this.book());else if(!mapWasVisible||World.mapEntryPending){World.resetPerspective();World.render()}World.mapEntryPending=false}
       if(this.visible('board')){const oldKey=this.key('board'),prior=Board.cameraMode,mode=tab==='split'?'split':'full',has=!!(Board.viewCameras?.[mode]||Board.data().viewports?.[mode]||(mode==='full'&&Board.data().viewport));Board.setView(mode);if(prior!==mode&&!has&&states.has(oldKey))states.set(this.key('board'),states.get(oldKey))}
       for(const el of document.querySelectorAll('[data-workspace-mode]')){el.setAttribute('aria-selected',String(el.dataset.workspaceMode===tab));el.tabIndex=el.dataset.workspaceMode===tab?0:-1}
       $('#splitLeft').value=pair.left;$('#splitRight').value=pair.right;applySplitRatio(this.book()?.splitRatio??55);
@@ -39,4 +39,5 @@ const panelChoices=Object.entries(WorkspaceShell.labels).filter(([type])=>type!=
 $('#workspacePanels').insertAdjacentHTML('afterbegin','<div class="split-panel-choice" id="splitLeftControls"><label>Left Panel <select id="splitLeft" aria-label="Left Panel">'+panelChoices+'</select></label><button id="swapPanels" aria-label="Swap Panels">⇄ Swap</button></div><div class="split-panel-choice" id="splitRightControls"><label>Right Panel <select id="splitRight" aria-label="Right Panel">'+panelChoices+'</select></label></div>');
 $('#splitLeft').onchange=e=>WorkspaceShell.configure('left',e.target.value);$('#splitRight').onchange=e=>WorkspaceShell.configure('right',e.target.value);$('#swapPanels').onclick=()=>WorkspaceShell.swap();
 setWorkspaceTab=tab=>WorkspaceShell.activate(tab);
+const perspectiveBackToLibrary=backToLibrary;backToLibrary=function(...args){World.mapEntryPending=true;return perspectiveBackToLibrary(...args)};
 window.addEventListener('resize',()=>WorkspaceShell.resize());
