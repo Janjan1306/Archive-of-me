@@ -270,7 +270,10 @@ async function initializeArchive(){try{
       await setting('initialized',true);
     }
   }
-  view=getSetting('libraryView','shelf')==='list'?'list':'shelf';currentLibraryId=getSetting('activeLibrary',null)||activeLibraries()[0]?.id||null;render();restoreRoute();if(!getSetting('reminderSince',0))await setting('reminderSince',Date.now());const days=getSetting('backupReminder',14);if(days&&(Date.now()-getSetting('lastBackup',getSetting('reminderSince')))>days*86400000)message('Time to back up your archive. Open Settings → Backup & Restore.',true);
+  const savedLibraryView=getSetting('libraryView',null);
+  view=savedLibraryView===null?(matchMedia('(width < 1200px)').matches?'list':'shelf'):(savedLibraryView==='list'?'list':'shelf');
+  if(savedLibraryView===null)await setting('libraryView',view);
+  currentLibraryId=getSetting('activeLibrary',null)||activeLibraries()[0]?.id||null;render();restoreRoute();if(!getSetting('reminderSince',0))await setting('reminderSince',Date.now());const days=getSetting('backupReminder',14);if(days&&(Date.now()-getSetting('lastBackup',getSetting('reminderSince')))>days*86400000)message('Time to back up your archive. Open Settings → Backup & Restore.',true);
 }catch(e){serious(e);document.body.classList.add('storage-failed')}finally{document.body.classList.remove('busy')}}
 initializeArchive();
 
